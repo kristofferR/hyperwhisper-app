@@ -357,6 +357,22 @@ describe('usageRoute balance reporting', () => {
 });
 
 describe('usageRoute licence validation failures', () => {
+  test.each([401, 403, 404])('rejects valid:true from HTTP %i without caching it', async (status) => {
+    cachedLicense = null;
+    const api = withLicenseApi({
+      validate: () => Response.json({ valid: true, credits: 1_000_000 }, { status }),
+    });
+
+    const app = buildApp();
+    const firstResponse = await app.request('/usage?account_key=contradictory-key');
+    const secondResponse = await app.request('/usage?account_key=contradictory-key');
+
+    expect(firstResponse.status).toBe(401);
+    expect(secondResponse.status).toBe(401);
+    expect(cacheWrites).toHaveLength(0);
+    expect(api.urls).toHaveLength(2);
+  });
+
   test('an authoritative valid:false verdict IS cached, unlike a transient 5xx', async () => {
     cachedLicense = null;
     withLicenseApi({ validate: () => Response.json({ valid: false }) });
