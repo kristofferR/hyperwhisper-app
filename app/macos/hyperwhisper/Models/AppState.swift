@@ -285,10 +285,24 @@ class AppState: ObservableObject {
     // SwiftUI automatically re-renders views that depend on these values
     
     /// Currently selected navigation item in the sidebar
-    @Published var selectedNavigationItem: NavigationItem = .home
+    @Published var selectedNavigationItem: NavigationItem = .home {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .selectedNavigationItem,
+                state: newValue.mainActorUIState
+            )
+        }
+    }
     
     /// Current state of the recording process
-    @Published var recordingState: RecordingState = .idle
+    @Published var recordingState: RecordingState = .idle {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .recordingState,
+                state: newValue.mainActorUIState
+            )
+        }
+    }
     
     /// Whether the app is currently recording
     /// This is computed from recordingState for convenience
@@ -303,10 +317,24 @@ class AppState: ObservableObject {
     @Published var showMiniWindow: Bool = false
     
     /// Whether to show the recording dialog
-    @Published var showRecordingDialog: Bool = false
+    @Published var showRecordingDialog: Bool = false {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .showRecordingDialog,
+                state: newValue ? .booleanTrue : .booleanFalse
+            )
+        }
+    }
 
     /// Whether to show the cancel recording confirmation dialog
-    @Published var showCancelConfirmation: Bool = false
+    @Published var showCancelConfirmation: Bool = false {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .showCancelConfirmation,
+                state: newValue ? .booleanTrue : .booleanFalse
+            )
+        }
+    }
     
     /// Whether to show the onboarding flow.
     ///
@@ -314,6 +342,12 @@ class AppState: ObservableObject {
     /// suppresses pasting/typing into other apps for the whole sheet lifetime —
     /// onboarding shows transcripts inline only.
     @Published var showOnboarding: Bool = false {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .showOnboarding,
+                state: newValue ? .booleanTrue : .booleanFalse
+            )
+        }
         didSet { TextDeliveryGate.setSuppressed(showOnboarding) }
     }
     
@@ -441,12 +475,26 @@ class AppState: ObservableObject {
     /// Streaming connection lifecycle states
     /// Tracks the WebSocket connection state for streaming transcription to provide visual feedback
     /// This helps users know when they can start speaking (avoiding lost audio during connection setup)
-    @Published var streamingConnectionState: StreamingConnectionState = .idle
+    @Published var streamingConnectionState: StreamingConnectionState = .idle {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .streamingConnectionState,
+                state: newValue.mainActorUIState
+            )
+        }
+    }
 
     /// Whether the floating preview bubble should be shown above the recording dialog.
     /// Set when a streaming session targets a preview-only app (e.g. terminals) — text is
     /// shown in the bubble during speech and pasted in one shot at session end.
-    @Published var showStreamingPreview: Bool = false
+    @Published var showStreamingPreview: Bool = false {
+        willSet {
+            MainActorHangTrace.shared.recordUIUpdateRequest(
+                property: .showStreamingPreview,
+                state: newValue ? .booleanTrue : .booleanFalse
+            )
+        }
+    }
 
     /// Error message to display (nil if no error)
     @Published var errorMessage: String?
@@ -929,7 +977,7 @@ class AppState: ObservableObject {
         }
         
         // Log the selection for debugging
-        AppLogger.ui.debug("📝 Selected mode: \(mode.name ?? "Default") (persist: \(persist))")
+        AppLogger.ui.debug("Mode selected: source=managed_object persist=\(persist, privacy: .public)")
     }
 
     /// Select a mode from a value snapshot without materializing a Core Data
@@ -948,7 +996,7 @@ class AppState: ObservableObject {
             settingsManager.currentMode = snapshot.name
         }
 
-        AppLogger.ui.debug("📝 Selected mode: \(snapshot.name, privacy: .public) (persist: \(persist))")
+        AppLogger.ui.debug("Mode selected: source=snapshot persist=\(persist, privacy: .public)")
     }
 
     /// Counterpart to `selectMode` for when the selected Mode no longer exists.
@@ -1016,7 +1064,7 @@ class AppState: ObservableObject {
         selectMode(nextMode, persist: true)
 
         // STEP 6: Log the cycle action
-        AppLogger.ui.info("🔄 Cycled to mode: \(nextMode.name, privacy: .public)")
+        AppLogger.ui.info("Mode selection cycled")
     }
     
     // MARK: - Private Methods
@@ -1215,11 +1263,9 @@ class AppState: ObservableObject {
             return
         }
 
-        let modeName = mode.name ?? "Unknown"
-
         if let asrKey, asrKey.modeId == modeId {
             let modelId = (mode.model ?? "").isEmpty ? "base" : (mode.model ?? "base")
-            AppLogger.models.info("Preparing ASR model for mode: \(modeName, privacy: .public) → model: \(modelId, privacy: .public)")
+            AppLogger.models.info("Preparing ASR model: model=\(modelId, privacy: .public)")
             await transcriptionPipeline?.prepareModel(for: mode)
         }
 
@@ -1231,7 +1277,7 @@ class AppState: ObservableObject {
                 return
             }
             let postProcessing = String(runtimeKey.postProcessingMode)
-            AppLogger.models.info("Preparing local runtime for mode: \(modeName, privacy: .public) → postProcessingMode: \(postProcessing, privacy: .public)")
+            AppLogger.models.info("Preparing local runtime: post_processing_mode=\(postProcessing, privacy: .public)")
             await transcriptionPipeline?.prepareLocalRuntime(for: mode)
         }
     }
@@ -1339,8 +1385,8 @@ class AppState: ObservableObject {
             logger.debug("Started recording")
         case .complete(let text):
             logger.debug("Completed with transcript: chars=\(text.count, privacy: .public)")
-        case .error(let error):
-            logger.debug("Error occurred: \(error, privacy: .public)")
+        case .error:
+            logger.debug("Recording state changed: state=error")
         default:
             break
         }
@@ -1351,7 +1397,7 @@ class AppState: ObservableObject {
         // Avoid noisy logs for empty queries
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         // This would trigger a search in the history database
-        logger.info("Searching history for: \(query, privacy: .public)")
+        logger.info("Searching history: character_count=\(query.count, privacy: .public)")
     }
     
     /// Load saved state from UserDefaults
