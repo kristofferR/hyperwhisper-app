@@ -219,6 +219,111 @@ internal static class Program
                     "the trust probe exception evidence is missing");
             });
 
+            // HYPERWHISPER-Y5 / HYPERWHISPER-YF. Application Control blocked
+            // HyperWhisper.AppClassification.dll and HyperWhisper.Statistics.dll on
+            // real machines. The load failure surfaced while the CLR prepared the
+            // calling method, so the `try` inside that method never ran and the app
+            // crashed. The NoInlining assertions are the regression test: they fail
+            // if a later edit puts an optional assembly back into a method that must
+            // stay preparable on a machine that blocks it.
+            Run("OptionalAssemblyGuard keeps a blocked optional assembly off the recording path", () =>
+            {
+                Assert(OptionalAssemblyGuard.IsLoadFailure(new FileLoadException(
+                        "private message",
+                        @"C:\Users\private-user\HyperWhisper.Statistics.dll")),
+                    "a blocked assembly load is not classified as a load failure");
+                Assert(OptionalAssemblyGuard.IsLoadFailure(new FileNotFoundException()),
+                    "a missing assembly is not classified as a load failure");
+                Assert(OptionalAssemblyGuard.IsLoadFailure(new BadImageFormatException()),
+                    "a bad image is not classified as a load failure");
+                Assert(OptionalAssemblyGuard.IsLoadFailure(new TypeLoadException()),
+                    "a type load failure is not classified as a load failure");
+                Assert(OptionalAssemblyGuard.IsLoadFailure(
+                        new TypeInitializationException("T", new FileLoadException())),
+                    "a wrapped load failure is not unwrapped");
+                Assert(!OptionalAssemblyGuard.IsLoadFailure(
+                        new TypeInitializationException("T", new InvalidOperationException())),
+                    "an ordinary static-constructor fault is treated as a load failure");
+                Assert(!OptionalAssemblyGuard.IsLoadFailure(new InvalidOperationException()),
+                    "an ordinary fault is treated as a load failure");
+                Assert(!OptionalAssemblyGuard.IsLoadFailure(new OperationCanceledException()),
+                    "a cancellation is treated as a load failure");
+
+                Assert(OptionalAssemblyGuard.DescribeHResult(unchecked((int)0x800711C7)) == "0x800711C7",
+                    "the Application Control HRESULT is not rendered as 8 hex digits");
+
+                // The two assemblies ship beside the app, so the probe must find
+                // them. A false negative here would switch off both features for
+                // every user.
+                Assert(OptionalAssemblyGuard.IsAvailable(OptionalAssemblyGuard.AppClassificationAssembly),
+                    "the classifier assembly probe failed on a machine that carries it");
+                Assert(OptionalAssemblyGuard.IsAvailable(OptionalAssemblyGuard.StatisticsAssembly),
+                    "the statistics assembly probe failed on a machine that carries it");
+
+                // Deliberately NOT probed here: an assembly name that does not
+                // exist. That path reports to Sentry, and a release-CI run must not
+                // publish a diagnostic that is indistinguishable from a real user's
+                // blocked DLL in the very project routine 47 triages.
+
+                // The outcome table a caller degrades on. RunGuarded takes the
+                // availability answer and the failure reporter, so this drives every
+                // branch without probing a fake assembly name, without mutating the
+                // process-wide answer for the real ones, and without publishing a
+                // Sentry diagnostic a triage run could mistake for a real user.
+                var ran = 0;
+                Exception? reportedException = null;
+                var reportedStage = string.Empty;
+                Action<string, Exception, string> Record = (_, exception, stage) =>
+                {
+                    reportedException = exception;
+                    reportedStage = stage;
+                };
+
+                Assert(OptionalAssemblyGuard.RunGuarded(
+                        true, "HyperWhisper.Fake", "smoke", () => ran++, Record)
+                    == OptionalAssemblyOutcome.Completed,
+                    "an available assembly did not report Completed");
+                Assert(ran == 1, "the guarded work did not run for an available assembly");
+
+                Assert(OptionalAssemblyGuard.RunGuarded(
+                        false, "HyperWhisper.Fake", "smoke", () => ran++, Record)
+                    == OptionalAssemblyOutcome.Unavailable,
+                    "an unavailable assembly did not report Unavailable");
+                Assert(ran == 1, "the guarded work ran for an unavailable assembly");
+                Assert(reportedException == null,
+                    "an unavailable assembly reported a failure it never had");
+
+                var blocked = new FileLoadException(
+                    "private message", @"C:\Users\private-user\HyperWhisper.Fake.dll");
+                Assert(OptionalAssemblyGuard.RunGuarded(
+                        true, "HyperWhisper.Fake", "smoke", () => throw blocked, Record)
+                    == OptionalAssemblyOutcome.LoadFailed,
+                    "a load failure inside guarded work did not report LoadFailed");
+                Assert(ReferenceEquals(reportedException, blocked) && reportedStage == "smoke",
+                    "the load failure was not handed to the reporter with its stage");
+
+                // An ordinary fault is NOT the guard's business: it must keep
+                // escaping, so a real bug in the optional feature still reaches
+                // Sentry instead of being degraded away in silence.
+                var escaped = false;
+                try
+                {
+                    OptionalAssemblyGuard.RunGuarded(
+                        true, "HyperWhisper.Fake", "smoke",
+                        () => throw new InvalidOperationException("ordinary"), Record);
+                }
+                catch (InvalidOperationException)
+                {
+                    escaped = true;
+                }
+                Assert(escaped, "an ordinary exception was swallowed by the guard");
+
+                AssertNoInlining(typeof(MainViewModel), "CaptureApplicationContext");
+                AssertNoInlining(typeof(MainViewModel), "CaptureApplicationContextAsync");
+                AssertNoInlining(typeof(HyperWhisper.Views.Pages.HomePage), "LoadStatsBarAsync");
+                AssertNoInlining(typeof(HyperWhisper.Views.Pages.HomePage), "DetachStatsViewModel");
+            });
+
             Run("ApplicationContextService exception evidence is privacy-safe", () =>
             {
                 const string privatePath = @"C:\Users\private-user\Documents\spoken-note.txt";
@@ -14295,6 +14400,24 @@ internal static class Program
     {
         if (!condition)
             throw new InvalidOperationException(message);
+    }
+
+    /// <summary>
+    /// Pins the Application Control boundary (HYPERWHISPER-Y5 / HYPERWHISPER-YF).
+    /// An inlinable boundary is prepared with its caller, which puts the optional
+    /// assembly straight back into the method that must survive without it.
+    /// </summary>
+    private static void AssertNoInlining(Type type, string methodName)
+    {
+        var method = type.GetMethod(
+            methodName,
+            BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+        Assert(method != null,
+            $"{type.Name}.{methodName} is gone; the Application Control boundary lost a method");
+        Assert(method!.GetMethodImplementationFlags().HasFlag(MethodImplAttributes.NoInlining),
+            $"{type.Name}.{methodName} is inlinable again — a blocked optional assembly " +
+            "would fault its caller before any catch could run (HYPERWHISPER-Y5/YF)");
     }
 
     /// <summary>

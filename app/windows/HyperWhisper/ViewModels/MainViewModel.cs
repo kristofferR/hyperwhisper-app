@@ -1094,7 +1094,36 @@ public partial class MainViewModel : ViewModelBase
         HasLocalPostProcessingStatus = true;
     }
 
+    // async void event handler: an exception escaping the awaits below is rethrown
+    // on the SynchronizationContext and crashes the process. That is how a blocked
+    // optional assembly reached Sentry as an unhandled UI exception, from the
+    // shortcut that starts a recording (HYPERWHISPER-Y5).
+    //
+    // The filter is deliberately narrow — only an assembly or type load failure.
+    // Every other exception keeps escaping exactly as it does today, so this
+    // handler cannot swallow an unrelated bug or hide it from Sentry. The guard
+    // means a load failure should already be handled further in; this catch is the
+    // backstop for a preparation failure on any OTHER method of this path, which
+    // is thrown at the call instruction and is therefore catchable only here.
     private async void OnShortcutPressed(object? sender, KeyboardShortcutService.ShortcutEventArgs e)
+    {
+        try
+        {
+            await HandleShortcutPressedAsync(e);
+        }
+        catch (Exception ex) when (OptionalAssemblyGuard.IsLoadFailure(ex))
+        {
+            // Never `ex.Message`: a FileLoadException message carries the installed
+            // path, and that path holds the user's Windows account name.
+            OptionalAssemblyGuard.MarkUnavailable(
+                OptionalAssemblyGuard.AppClassificationAssembly, ex, "shortcut_pressed");
+            ShowErrorToastRequested?.Invoke(this, new ErrorToastEventArgs(
+                Loc.S("errors.recordingStartFailed"),
+                showSettingsButton: false));
+        }
+    }
+
+    private async Task HandleShortcutPressedAsync(KeyboardShortcutService.ShortcutEventArgs e)
     {
         switch (e.Name)
         {
@@ -1313,19 +1342,9 @@ public partial class MainViewModel : ViewModelBase
         // do not cancel pending clipboard restoration from the previous recording.
         _pasteService?.CaptureForegroundWindow();
 
-        // Capture application context BEFORE showing overlay (overlay steals focus)
-        _capturedApplicationContext = ApplicationContextService.Instance.GatherContext();
-
-        // Capture screen OCR text if enabled on this mode.
-        if (recordingMode.EnableScreenOCR && recordingMode.PostProcessingMode != 0)
-        {
-            _capturedApplicationContext ??= new HyperWhisper.Services.ApplicationContext();
-            _capturedApplicationContext.ScreenOCRText = await ScreenOCRCaptureService.Instance.CaptureAndOcrAsync();
-            if (_capturedApplicationContext.ScreenOCRText != null)
-            {
-                LoggingService.Info($"Screen OCR captured: {_capturedApplicationContext.ScreenOCRText.Length} characters");
-            }
-        }
+        // Capture application context BEFORE showing overlay (overlay steals focus).
+        // Guarded: see CaptureApplicationContextAsync (HYPERWHISPER-Y5).
+        await TryCaptureApplicationContextAsync(recordingMode);
 
         // CLOUD VS LOCAL MODEL LOADING
         // Cloud modes don't need a local model loaded - they use the API
@@ -1402,6 +1421,97 @@ public partial class MainViewModel : ViewModelBase
             CheckRecordingDurationLimit();
         };
         _durationTimer.Start();
+    }
+
+    // =========================================================================
+    // APPLICATION CONTEXT CAPTURE (HYPERWHISPER-Y5)
+    //
+    // Application context is an OPTIONAL enrichment for post-processing prompts.
+    // It is backed by HyperWhisper.AppClassification, which Windows Application
+    // Control can block on an individual machine. A blocked load used to take the
+    // whole recording start with it: ApplicationContext carries an AppType from
+    // that assembly, so naming the type in StartRecordingAsync made the CLR load
+    // the assembly while it PREPARED that method — before any `try` in it could
+    // run. The FileLoadException escaped the async void shortcut handler and the
+    // user could not record at all.
+    //
+    // The two Capture* methods below are the only ones in this flow that name a
+    // type from that assembly, they are NoInlining, and they are called only after
+    // the guard says the assembly loads. See Services/OptionalAssemblyGuard.cs.
+    // =========================================================================
+
+    /// <summary>
+    /// Captures the foreground application context and, when the mode asks for it,
+    /// the screen OCR text. Leaves the context null when
+    /// HyperWhisper.AppClassification cannot load on this machine.
+    /// </summary>
+    /// <remarks>
+    /// The screen OCR text is parked on <c>ApplicationContext</c>, so it is
+    /// captured only when that type can load. The stage slug says whether this
+    /// recording asked for OCR, so a skipped OCR capture is visible in the log and
+    /// in Sentry rather than silent.
+    /// </remarks>
+    private Task TryCaptureApplicationContextAsync(Mode recordingMode)
+    {
+        // The context belongs to THIS recording. Clear the previous one before the
+        // guard decides anything: a skipped or failed capture must not forward the
+        // last recording's application into this one's post-processing prompt.
+        _capturedApplicationContext = null;
+
+        var wantsScreenOcr = recordingMode.EnableScreenOCR && recordingMode.PostProcessingMode != 0;
+        var stage = wantsScreenOcr ? "start_recording_with_screen_ocr" : "start_recording";
+
+        return OptionalAssemblyGuard.TryRunAsync(
+            OptionalAssemblyGuard.AppClassificationAssembly,
+            stage,
+            () => CaptureApplicationContextAsync(recordingMode));
+    }
+
+    /// <summary>
+    /// The same guard for a flow that captures no screen OCR text. Streaming used
+    /// to call <c>GatherContext</c> directly and had the same crash.
+    /// </summary>
+    private void TryCaptureApplicationContext(string stage)
+    {
+        _capturedApplicationContext = null;
+
+        OptionalAssemblyGuard.TryRun(
+            OptionalAssemblyGuard.AppClassificationAssembly,
+            stage,
+            CaptureApplicationContext);
+    }
+
+    /// <summary>
+    /// Warning: do not inline this method and do not name
+    /// <c>ApplicationContext</c> in its callers. Both put the optional assembly
+    /// back into a method that must stay preparable on a machine that blocks it.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void CaptureApplicationContext() =>
+        // ast-grep-ignore: no-unguarded-optional-assembly-use -- this IS the guarded boundary, reached only through OptionalAssemblyGuard.TryRun.
+        _capturedApplicationContext = ApplicationContextService.Instance.GatherContext();
+
+    /// <summary>
+    /// Warning: do not inline this method and do not name
+    /// <c>ApplicationContext</c> in its callers. See
+    /// <see cref="CaptureApplicationContext"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private async Task CaptureApplicationContextAsync(Mode recordingMode)
+    {
+        CaptureApplicationContext();
+
+        // Capture screen OCR text if enabled on this mode.
+        if (recordingMode.EnableScreenOCR && recordingMode.PostProcessingMode != 0)
+        {
+            // ast-grep-ignore: no-unguarded-optional-assembly-use -- this IS the guarded boundary, reached only through OptionalAssemblyGuard.TryRunAsync.
+            _capturedApplicationContext ??= new HyperWhisper.Services.ApplicationContext();
+            _capturedApplicationContext.ScreenOCRText = await ScreenOCRCaptureService.Instance.CaptureAndOcrAsync();
+            if (_capturedApplicationContext.ScreenOCRText != null)
+            {
+                LoggingService.Info($"Screen OCR captured: {_capturedApplicationContext.ScreenOCRText.Length} characters");
+            }
+        }
     }
 
     private void CleanupFailedRecordingStart()
