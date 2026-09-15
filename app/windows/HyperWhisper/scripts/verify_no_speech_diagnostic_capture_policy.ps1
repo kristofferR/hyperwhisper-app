@@ -2,6 +2,43 @@ param()
 
 $ErrorActionPreference = "Stop"
 
+function Get-HarnessArchitecturePolicy {
+    param(
+        [Parameter(Mandatory)]
+        [System.Runtime.InteropServices.Architecture]$Architecture
+    )
+
+    switch ($Architecture) {
+        "X64" {
+            return @{
+                RustCoreDirectory = "x64"
+                RuntimeIdentifier = "win-x64"
+            }
+        }
+        "Arm64" {
+            return @{
+                RustCoreDirectory = "arm64"
+                RuntimeIdentifier = "win-arm64"
+            }
+        }
+        default {
+            throw "Unsupported Windows architecture for the no-speech diagnostic verifier: $Architecture."
+        }
+    }
+}
+
+$X64Policy = Get-HarnessArchitecturePolicy -Architecture X64
+if ($X64Policy.RustCoreDirectory -ne "x64" -or $X64Policy.RuntimeIdentifier -ne "win-x64") {
+    throw "The x64 no-speech verifier architecture policy is invalid."
+}
+
+$Arm64Policy = Get-HarnessArchitecturePolicy -Architecture Arm64
+if ($Arm64Policy.RustCoreDirectory -ne "arm64" -or $Arm64Policy.RuntimeIdentifier -ne "win-arm64") {
+    throw "The ARM64 no-speech verifier architecture policy is invalid."
+}
+
+$HarnessArchitecture = Get-HarnessArchitecturePolicy -Architecture ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)
+
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $HarnessRoot = Join-Path $env:TEMP "hyperwhisper-no-speech-diagnostic-policy-verifier"
 Remove-Item -LiteralPath $HarnessRoot -Recurse -Force -ErrorAction SilentlyContinue
@@ -12,6 +49,14 @@ $HarnessProgram = Join-Path $HarnessRoot "Program.cs"
 $HarnessStubs = Join-Path $HarnessRoot "HyperWhisperStubs.cs"
 $DiagnosticsSource = [System.Security.SecurityElement]::Escape((Join-Path $ProjectRoot "Services\TranscriptionDiagnosticsService.cs"))
 $ProviderDiagnosticsSource = [System.Security.SecurityElement]::Escape((Join-Path $ProjectRoot "Services\Transcription\TranscriptionProviderDiagnostics.cs"))
+$DeviceSelectionReasonSource = [System.Security.SecurityElement]::Escape((Join-Path $ProjectRoot "Services\AudioDeviceSelectionReason.cs"))
+$SharedCoreProject = [System.Security.SecurityElement]::Escape((Join-Path $ProjectRoot "..\..\shared-dotnet\HyperWhisper.SharedCore\HyperWhisper.SharedCore.csproj"))
+$RustCoreDllPath = Join-Path $ProjectRoot "Resources\rust-core\$($HarnessArchitecture.RustCoreDirectory)\hyperwhisper_core.dll"
+if (-not (Test-Path -LiteralPath $RustCoreDllPath -PathType Leaf)) {
+    throw "Required native core DLL is missing: $RustCoreDllPath. Build the Windows Rust core before running this verifier."
+}
+
+$RustCoreDll = [System.Security.SecurityElement]::Escape($RustCoreDllPath)
 
 @"
 <Project Sdk="Microsoft.NET.Sdk">
@@ -19,13 +64,20 @@ $ProviderDiagnosticsSource = [System.Security.SecurityElement]::Escape((Join-Pat
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RuntimeIdentifier>$($HarnessArchitecture.RuntimeIdentifier)</RuntimeIdentifier>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <ProjectReference Include="$SharedCoreProject" />
     <Compile Include="$DiagnosticsSource" Link="TranscriptionDiagnosticsService.cs" />
     <Compile Include="$ProviderDiagnosticsSource" Link="TranscriptionProviderDiagnostics.cs" />
+    <Compile Include="$DeviceSelectionReasonSource" Link="AudioDeviceSelectionReason.cs" />
+    <Content Include="$RustCoreDll">
+      <Link>hyperwhisper_core.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
 "@ | Set-Content -LiteralPath $HarnessProject -Encoding UTF8
@@ -39,6 +91,7 @@ namespace HyperWhisper.Data.Entities
         public string? CloudProvider { get; set; }
         public string? CloudAccuracyTier { get; set; }
         public string? LocalEngine { get; set; }
+        public string? Language { get; set; }
         public string? Name { get; set; }
         public string? Preset { get; set; }
     }
@@ -70,6 +123,11 @@ namespace HyperWhisper.Models
 
 namespace HyperWhisper.Services
 {
+    public sealed class AudioDeviceService
+    {
+        public sealed record AudioDevice(int DeviceNumber, string Name);
+    }
+
     public static class LoggingService
     {
         public static void Debug(string message) { }
@@ -77,7 +135,7 @@ namespace HyperWhisper.Services
 
     public static class SentryService
     {
-        public static void CaptureDiagnosticEvent(
+        public static void CaptureDiagnosticTransaction(
             string message,
             Dictionary<string, object>? extras = null,
             Dictionary<string, string>? tags = null,
@@ -127,13 +185,14 @@ static object AudioDiagnostics(
         rmsDbfs,
         nonSilentRatio,
         analysisError,
-        decodedSampleCount
+        decodedSampleCount,
+        null
     };
 
     // Pick the constructor by arity instead of letting Activator.CreateInstance go
     // through Type.DefaultBinder. The binder has no Nullable<T> handling -
     // typeof(long?).IsAssignableFrom(typeof(long)) is false - so a boxed System.Int64
-    // passed for the trailing "long? DecodedSampleCount" parameter makes BindToMethod
+    // passed for the trailing nullable count parameters makes BindToMethod
     // discard the only candidate constructor and throw MissingMethodException, which
     // would take out the very first assertion below and leave this script verifying
     // nothing. ConstructorInfo.Invoke instead goes through CheckValue, which DOES
@@ -275,7 +334,7 @@ Assert(
 Console.WriteLine("No-speech diagnostic capture policy verification passed.");
 '@ | Set-Content -LiteralPath $HarnessProgram -Encoding UTF8
 
-dotnet run --project $HarnessProject --nologo
+dotnet run --project $HarnessProject --runtime $HarnessArchitecture.RuntimeIdentifier --nologo
 if ($LASTEXITCODE -ne 0) {
     throw "No-speech diagnostic capture policy harness failed with exit code $LASTEXITCODE."
 }
