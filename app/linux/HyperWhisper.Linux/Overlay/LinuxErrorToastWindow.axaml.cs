@@ -80,6 +80,36 @@ internal sealed partial class LinuxErrorToastWindow : Window
     private PixelPoint _target;
     private bool _placed;
 
+    /// <summary>
+    /// The lowest Y <see cref="ApplyPosition"/> may write for the CURRENT <see cref="_target"/>, in
+    /// PIXELS -- or <see cref="int.MinValue"/> for "no floor", which is both the state before the
+    /// first placement and the state of a target <see cref="PlaceOnScreen"/> deliberately left
+    /// unclamped.
+    ///
+    /// The floor is decided in PlaceOnScreen, beside the target and by the same conditional, and
+    /// only ENFORCED in ApplyPosition. That split is what holds two properties at once that a
+    /// single unconditional clamp cannot: no writer of Position -- least of all the slide -- can
+    /// get under the floor, AND an overlay on a monitor ABOVE this one, whose negative Y Windows
+    /// leaves alone, is not dragged down onto this screen by the enforcement. A clamp that read
+    /// the work-area top directly here would undo that skip on every frame, and would then
+    /// re-latch to this screen's top at the next placement, pinning the toast there for good.
+    ///
+    /// int.MinValue before the first placement leaves the enforcement inert until a real screen
+    /// has been read, rather than pinning the toast to y=0 on a machine where no screen could be
+    /// resolved at all.
+    /// </summary>
+    private int _minY = int.MinValue;
+
+    /// <summary>
+    /// Where the window currently sits RELATIVE to <see cref="_target"/>: 0 at rest, -10 at the
+    /// start of the slide in and at the end of the slide out. Holding the animation as an offset
+    /// rather than as two absolute points is what lets a re-place move a running slide with it.
+    /// </summary>
+    private int _slideOffsetY;
+
+    /// <summary>Guards the re-entry from <see cref="Layoutable.UpdateLayout"/> back into SizeChanged.</summary>
+    private bool _placing;
+
     /// <summary>Raised when "Open Settings" is pressed, carrying where to go.</summary>
     public event EventHandler<LinuxErrorToastAction>? SettingsRequested;
 
@@ -111,6 +141,14 @@ internal sealed partial class LinuxErrorToastWindow : Window
             // being left at the compositor's default 0,0.
             PlaceOnScreen();
         };
+        // The height of this window is a per-MESSAGE value now that the message wraps (#669), and
+        // the window is REUSED: MainWindow caches one toast and DismissImmediately only hides it,
+        // so neither of the two placements above can read a height that belongs to the message
+        // being shown -- the window has not been resized for it yet. SizeChanged is the moment it
+        // has been. Measured under Xvfb: a one-line error followed by a four-line one read 40 at
+        // both placements while the settled height was 81, which put the toast 29px INSIDE the
+        // recording overlay it is supposed to float 12px above.
+        SizeChanged += (_, _) => { if (IsVisible) PlaceOnScreen(); };
     }
 
     /// <summary>
@@ -194,10 +232,18 @@ internal sealed partial class LinuxErrorToastWindow : Window
     // PLACEMENT
     // Windows centres the toast over the recording overlay with a 12px gap, and falls back to
     // bottom-centre of the work area 80px up when the overlay is not on screen.
+    //
+    // Both branches subtract the toast's OWN height from a downward anchor, so the height has to
+    // be the current message's and the result has to be clamped to the work area. Windows does
+    // both -- UpdateLayout() before reading ActualHeight, and a top clamp in either branch. This
+    // works in PIXELS off screen.WorkingArea rather than in WPF's DIPs, so the clamp compares
+    // pixel Y against pixel Y and nothing is scaled twice.
     // =====================================================================================
 
     private void PlaceOnScreen()
     {
+        if (_placing) return;
+        _placing = true;
         try
         {
             // ScreenFromWindow is null until the window is mapped, and Primary can be null too on
@@ -211,6 +257,10 @@ internal sealed partial class LinuxErrorToastWindow : Window
             var work = screen.WorkingArea;
             if (work.Width <= 0 || work.Height <= 0) work = screen.Bounds;
             if (work.Width <= 0 || work.Height <= 0) return;
+            // The Windows port calls UpdateLayout() here, with the same comment: Show() on a
+            // re-used window does not flush layout first, so the height still describes the
+            // PREVIOUS failure until a pass has run for this one.
+            UpdateLayout();
             var width = (int)Math.Round(Bounds.Width * scale);
             var height = (int)Math.Round(Bounds.Height * scale);
             if (width <= 0) width = (int)Math.Round(Width * scale);
@@ -220,21 +270,70 @@ internal sealed partial class LinuxErrorToastWindow : Window
             {
                 var overlayWidth = (int)Math.Round(overlay.Bounds.Width * scale);
                 if (overlayWidth <= 0) overlayWidth = (int)Math.Round(overlay.Width * scale);
-                _target = new PixelPoint(
-                    overlay.Position.X + (overlayWidth - width) / 2,
-                    overlay.Position.Y - height - (int)Math.Round(OverlayGapDip * scale));
+                var top = overlay.Position.Y - height - (int)Math.Round(OverlayGapDip * scale);
+                // Windows' guard, and its caveat. A tall toast above an overlay near the top of
+                // the screen would otherwise start off the top edge and hide its own first lines
+                // -- and the overlay IS draggable to the very top: its placement is persisted as a
+                // ratio clamped to [0,1], so YRatio=0 puts it at exactly work.Y.
+                //
+                // Conditional on the overlay being inside this work area, for the reason Windows
+                // gives: an overlay on a monitor ABOVE this one has a legitimately negative Y that
+                // must be left alone rather than dragged down onto the primary screen.
+                //
+                // Windows spends that conditional on the target itself. Here it is spent on the
+                // FLOOR, and ApplyPosition does the one clamp -- which comes to the same placement
+                // by a shorter route, and keeps two properties a clamp on the target alone cannot.
+                // The slide cannot duck under the floor, because ApplyPosition is the only writer
+                // of Position. And the other-monitor skip survives the slide, because in that case
+                // there is no floor to enforce: this screen's top is not a bound on a toast that
+                // belongs above it. Clamping in both places would be neither -- the unconditional
+                // half would simply overrule the conditional half one frame later.
+                _minY = overlay.Position.Y >= work.Y ? work.Y : int.MinValue;
+                _target = new PixelPoint(overlay.Position.X + (overlayWidth - width) / 2, top);
             }
             else
             {
+                // Windows: Top = Math.Max(workArea.Top, workArea.Bottom - height - 80). No
+                // conditional here, because this branch has no other monitor's window to respect:
+                // the toast is placed against its OWN screen's work area, so that work area is a
+                // real floor for the slide as well as for the placement.
+                _minY = work.Y;
                 _target = new PixelPoint(
                     work.X + (work.Width - width) / 2,
-                    work.Bottom - height - (int)Math.Round(FallbackBottomMarginDip * scale));
+                    Math.Max(work.Y,
+                        work.Bottom - height - (int)Math.Round(FallbackBottomMarginDip * scale)));
             }
 
             _placed = true;
-            Position = _target;
+            // Re-applied at whatever point the slide has reached, so a re-place that lands mid
+            // animation moves the animation rather than jumping over it.
+            ApplyPosition(_slideOffsetY);
         }
         catch { }
+        finally { _placing = false; }
+    }
+
+    /// <summary>
+    /// The ONLY writer of <see cref="Window.Position"/>. Every path -- the first placement, the
+    /// re-place on a size settle, the slide in and the slide out -- lands here, so the floor
+    /// cannot be bypassed by an animation the way a clamp inside PlaceOnScreen alone could.
+    ///
+    /// It ENFORCES <see cref="_minY"/> and never computes one. Deciding the floor here instead
+    /// would mean deciding it without the one fact that decides it -- whether the anchor is on
+    /// this screen at all -- and would overrule PlaceOnScreen's deliberate skip for an overlay on
+    /// a monitor above.
+    ///
+    /// The slide in starts 10px ABOVE the target, so against an overlay sitting at the very top of
+    /// the work area the floor holds those frames at the top edge and the toast fades in without
+    /// sliding. That is deliberate: the alternative is drawing the first frames of an error
+    /// message off the top of the screen.
+    /// </summary>
+    private void ApplyPosition(int offsetY)
+    {
+        _slideOffsetY = offsetY;
+        var y = _target.Y + offsetY;
+        if (_minY != int.MinValue && y < _minY) y = _minY;
+        try { Position = new PixelPoint(_target.X, y); } catch { }
     }
 
     /// <summary>
@@ -262,7 +361,7 @@ internal sealed partial class LinuxErrorToastWindow : Window
         if (_border is null || !_placed) return;
         SetOpacityTransition(TimeSpan.FromMilliseconds(200), new QuadraticEaseOut());
         _border.Opacity = 1;
-        Slide(new PixelPoint(_target.X, _target.Y - SlideDip), _target, TimeSpan.FromMilliseconds(200));
+        Slide(-SlideDip, 0, TimeSpan.FromMilliseconds(200));
     }
 
     private void DismissWithAnimation()
@@ -270,7 +369,7 @@ internal sealed partial class LinuxErrorToastWindow : Window
         if (_border is null || !_placed) { DismissImmediately(); return; }
         SetOpacityTransition(TimeSpan.FromMilliseconds(150), new QuadraticEaseIn());
         _border.Opacity = 0;
-        Slide(_target, new PixelPoint(_target.X, _target.Y - SlideDip), TimeSpan.FromMilliseconds(150));
+        Slide(0, -SlideDip, TimeSpan.FromMilliseconds(150));
         DispatcherTimer.RunOnce(() => { try { if (IsVisible) Hide(); } catch { } },
             TimeSpan.FromMilliseconds(160));
     }
@@ -284,11 +383,19 @@ internal sealed partial class LinuxErrorToastWindow : Window
         ];
     }
 
-    private void Slide(PixelPoint start, PixelPoint target, TimeSpan duration)
+    /// <summary>
+    /// Animates the OFFSET from <see cref="_target"/>, not a pair of absolute points.
+    ///
+    /// The toast's height is a per-message value now that the message wraps, so a placement can
+    /// land while a slide is running -- the size settles after Show(). Interpolating an offset
+    /// means such a re-place carries the animation with it: the next tick is drawn against the new
+    /// target instead of driving the window back to a destination computed for the old height.
+    /// </summary>
+    private void Slide(int startOffsetY, int endOffsetY, TimeSpan duration)
     {
         StopSlide();
-        Position = start;
-        if (start == target) return;
+        ApplyPosition(startOffsetY);
+        if (startOffsetY == endOffsetY) return;
         var started = DateTime.UtcNow;
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _slide = timer;
@@ -297,13 +404,7 @@ internal sealed partial class LinuxErrorToastWindow : Window
             var progress = duration <= TimeSpan.Zero
                 ? 1
                 : Math.Clamp((DateTime.UtcNow - started).TotalMilliseconds / duration.TotalMilliseconds, 0, 1);
-            try
-            {
-                Position = new PixelPoint(
-                    start.X + (int)Math.Round((target.X - start.X) * progress),
-                    start.Y + (int)Math.Round((target.Y - start.Y) * progress));
-            }
-            catch { }
+            ApplyPosition(startOffsetY + (int)Math.Round((endOffsetY - startOffsetY) * progress));
             if (progress >= 1) StopSlide();
         };
         timer.Start();
