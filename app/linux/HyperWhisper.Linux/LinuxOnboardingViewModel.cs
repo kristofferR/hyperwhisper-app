@@ -53,6 +53,9 @@ internal sealed class LinuxOnboardingViewModel : ViewModelBase
         _selectMode = selectMode;
         _selectDevice = selectDevice;
         _text = text;
+        // The resting state of the status line, and the only place the not-started string is named.
+        // Not string.Empty: with the gate open and no test yet run this seed IS what the user reads,
+        // so an empty seed leaves the Test step's only explanation blank.
         _testStatus = text("linux.onboarding.test.not_started");
     }
 
@@ -110,8 +113,63 @@ internal sealed class LinuxOnboardingViewModel : ViewModelBase
         string.Equals(SelectedMode?.ProviderType, "cloud", StringComparison.OrdinalIgnoreCase)
             ? "linux.onboarding.provider.unavailable.cloud"
             : "linux.onboarding.provider.unavailable");
+    /// <summary>
+    /// Warning: nothing reads this. Its last reader was <c>CanGoNext</c>'s
+    /// <c>Test =&gt; IsTestReady &amp;&amp; TestSucceeded</c> arm, removed in 7a24b379 (#482) when the Test
+    /// step stopped being a gate — so a wrong value here has no symptom and fails no test.
+    ///
+    /// Retiring it is a SMALL change, and this doc used to claim otherwise. It reaches the five
+    /// writes below, the <c>succeeded</c> parameter of <see cref="SetTestStatus"/>, and exactly ONE
+    /// caller that passes that argument: MainWindow.axaml.cs:797, the saved-transcript handler. The
+    /// other three <c>SetTestStatus</c> calls there (:783 transcribing, :789 recording, :793 failed)
+    /// pass no <c>succeeded:</c> at all. It is left standing only because deleting state is not what
+    /// issue #671 asked for — #671 is about the status LINE. Retire it under its own issue, and do
+    /// not give it a reader in the meantime.
+    /// </summary>
     public bool TestSucceeded { get => _testSucceeded; private set => Set(ref _testSucceeded, value); }
-    public string TestStatus { get => _testStatus; private set => Set(ref _testStatus, value); }
+    /// <summary>
+    /// The status line follows the gate, not the click. The Test step's only button binds
+    /// <see cref="IsTestReady"/>, so on a fresh install — every seeded mode is a cloud mode with no
+    /// credential — it is disabled while this line still read "Ready for a test dictation." The
+    /// string that explains the block was written only inside that disabled button's own Click
+    /// handler, so it could never run. The gate owns that string now; no caller writes it.
+    /// </summary>
+    /// <remarks>
+    /// Warning: exactly TWO inputs decide this line — the gate, and the last message the app stored.
+    /// Keep it at two.
+    ///
+    /// Notification rides on <c>Set</c>, which is silent when the stored string is unchanged. That
+    /// is only sound because an unchanged store cannot change what is rendered: the stored message
+    /// is rendered verbatim while the gate is open, and is not rendered at all while it is shut.
+    /// Every move of the gate goes through <see cref="NotifyReadiness"/>, which raises this property
+    /// beside <see cref="IsTestReady"/>. A THIRD input — an "a test was attempted" flag, say — would
+    /// change the rendered line while the stored string stood still, and the line would go stale
+    /// with no PropertyChanged at all; add one and the notification must stop riding on <c>Set</c>.
+    ///
+    /// The stored message therefore outlives a gate that shuts and reopens. That is deliberate: the
+    /// transcription-saved handler is wired for the whole app, so a test that really ran can land
+    /// while an awaited readiness lookup has the gate momentarily shut, and its result must not be
+    /// thrown away.
+    ///
+    /// A selection change leaves the message alone for the same reason, and that choice has a real
+    /// cost. Warning: do not read the old justification here — "the recorder is still running" — as
+    /// a statement of fact. It is only SOMETIMES true, and this view model cannot tell which time it
+    /// is in: it never observes recorder state. Nothing on the selection path stops the recorder
+    /// (<c>TranscriptionWorkflow.SelectDevice</c> only reassigns the device id), so clearing the
+    /// message would relabel a live recording "Ready for a test dictation." and would also discard a
+    /// result that landed while the gate was shut. Keeping it puts the opposite fault on screen:
+    /// after a test that COMPLETED, the line can still read "Test dictation succeeded and was saved
+    /// to History." for a microphone that was never tested. Keeping it is the lesser fault, not a
+    /// correct one — a relabelled recording invites a click that stops the test the user just
+    /// started, while a stale result misreports and nothing more. Telling the two cases apart needs
+    /// this view model to follow recorder state, which is larger than issue #671 and wants its own
+    /// issue.
+    /// </remarks>
+    public string TestStatus
+    {
+        get => IsTestReady ? _testStatus : _text("linux.onboarding.test.not_ready");
+        private set => Set(ref _testStatus, value);
+    }
     public Mode? SelectedMode
     {
         get => _selectedMode;
@@ -206,7 +264,7 @@ internal sealed class LinuxOnboardingViewModel : ViewModelBase
     private void NotifyReadiness()
     {
         Notify(nameof(IsSelectedModeAvailable)); Notify(nameof(IsTestReady)); Notify(nameof(CanGoNext));
-        Notify(nameof(UnavailableMessage));
+        Notify(nameof(UnavailableMessage)); Notify(nameof(TestStatus));
     }
 }
 

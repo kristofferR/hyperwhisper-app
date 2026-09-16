@@ -139,6 +139,97 @@ static Task OnboardingStateMachine()
     unavailable.Skip();
     Assert(!unavailable.IsVisible && decisions.SequenceEqual([false, true]), "skip was not durably requested");
 
+    // Issue #671. The Test step's only control binds IsTestReady, so on a fresh install — every
+    // seeded mode is a cloud mode with no credential — it is disabled, while the line beside it
+    // read "Ready for a test dictation." and named no reason. The string that explains the block
+    // was written only inside that disabled button's own Click handler. These assertions need the
+    // English text, not the key, so they run a real catalogue rather than this file's key => key.
+    using var strings = new AvaloniaLocalizationBridge(CultureInfo.GetCultureInfo("en"));
+    var gated = new LinuxOnboardingViewModel(
+        new(true, true, false, false, false, true, false),
+        [new Mode { Id = Guid.NewGuid(), Name = "Hyper", ProviderType = "cloud", CloudProvider = "hyperwhisper" }],
+        null, [microphone], microphone, selectedModeAvailable: false,
+        _ => true, _ => { }, _ => { }, key => strings.GetRequired(key));
+    // Nothing in this Exe re-reads a property when PropertyChanged fires, so a bare read of
+    // TestStatus would pass even if the notification were missing and the real TextBlock never
+    // repainted. Stand in for the binding: re-read on every notification, and assert on that.
+    var painted = gated.TestStatus;
+    gated.PropertyChanged += (_, args) =>
+    {
+        if (args.PropertyName == nameof(LinuxOnboardingViewModel.TestStatus)) painted = gated.TestStatus;
+    };
+    gated.Show(); gated.Next(); gated.Next(); gated.Next(); gated.Next();
+    Assert(gated.IsTest, "onboarding did not reach the test step with a mode and a microphone chosen");
+    Assert(!gated.IsTestReady && gated.TestStatus == "Select an available mode and microphone first.",
+        "the only control on the test step was disabled while the line still read 'Ready for a test dictation.'");
+
+    gated.SetSelectedModeAvailable(true);
+    Assert(gated.IsTestReady && painted == "Ready for a test dictation.",
+        "TestStatus was not raised beside IsTestReady, so the bound line kept the blocked message after the mode became available");
+
+    // Every read above happens before any test has run, so the branch that renders a real test's
+    // own message needs its own assertions — without them a getter that ignores the stored string
+    // entirely, and shows "Ready for a test dictation." through recording, transcription, success
+    // and failure alike, passes this file. Read it through `painted`, so a stored message that
+    // changes the line without raising PropertyChanged fails here too.
+    var recordingMessage = strings.GetRequired("linux.onboarding.test.recording");
+    var failedMessage = strings.GetRequired("linux.onboarding.test.failed");
+    var succeededMessage = strings.GetRequired("linux.onboarding.test.succeeded");
+    gated.SetTestStatus(recordingMessage);
+    Assert(painted == recordingMessage, "the line did not repaint with the message of a test that ran");
+
+    // Nothing on the selection path stops the recorder — TranscriptionWorkflow.SelectDevice only
+    // reassigns the device id — so relabelling a live recording "Ready for a test dictation."
+    // invites the user to start a test that is already running, and their next click takes the STOP
+    // arm and jumps to "Transcribing…". The message is theirs until a new one replaces it.
+    gated.SelectedDevice = new AudioInputDevice("mic-2", "Second microphone", false);
+    Assert(painted == recordingMessage, "a selection change relabelled a recording that was still running");
+
+    // A second failed test writes the SAME string as the first, and `Set` is silent when the stored
+    // string is unchanged — so that write repaints nothing at all. Relying on that is sound only
+    // while the rendered text is a function of the stored message and the gate ALONE. Reading the
+    // line straight after the repeat proves none of that: it already reads the string the repeat
+    // writes, so the read holds for the correct view model, for one that drops the write, and for
+    // one carrying a third input the write was supposed to restore. Move the gate under the message
+    // instead — a readiness lookup can shut it while the second test is still running — and reach
+    // the same two endpoints by two routes, where a third input has room to diverge.
+    gated.SetTestStatus(failedMessage);
+    Assert(painted == failedMessage, "the first failure never reached the line");
+    gated.SelectedDevice = microphone;
+
+    // Route 1: the gate shuts and reopens with no test in between. What the user is owed is still
+    // the first failure, so a view model that drops the message on a momentary gate blip loses a
+    // result this property's own contract promises to keep.
+    gated.SetSelectedModeAvailable(false);
+    gated.SetSelectedModeAvailable(true);
+    Assert(painted == failedMessage && gated.TestStatus == failedMessage,
+        "a failure did not outlive a gate that shut and reopened with no test in between");
+
+    // Route 2: the same two endpoints, with the second failure — the IDENTICAL string — landing
+    // while the gate is shut. Both routes must render the same line, because both leave the same
+    // stored message and the same gate. A third input keyed to the store CHANGING (an "a test was
+    // attempted" flag assigned from `Set`'s own result, say) passes route 1 and every assertion
+    // above, and puts "Ready for a test dictation." here, after a test the user just watched fail.
+    // Read the property directly as well as through `painted`: a suppressed write raises nothing,
+    // so the stand-in alone cannot see a rendered value that went stale in place.
+    gated.SetSelectedModeAvailable(false);
+    gated.SetTestStatus(failedMessage);
+    gated.SetSelectedModeAvailable(true);
+    Assert(painted == failedMessage && gated.TestStatus == failedMessage,
+        "a repeated failure after a selection change left a stale line");
+
+    // The transcription-saved handler is wired for the whole app, not scoped to onboarding, and the
+    // mode setter shuts the gate synchronously while the readiness lookup is still awaiting — so a
+    // test that really ran can finish while the gate is momentarily shut. The shut gate still owns
+    // the line, but the result must not be discarded, or the user is never told the test passed.
+    gated.SetSelectedModeAvailable(false);
+    gated.SetTestStatus(succeededMessage, succeeded: true);
+    Assert(painted == "Select an available mode and microphone first.",
+        "a stored message outranked a shut gate");
+    gated.SetSelectedModeAvailable(true);
+    Assert(gated.IsTestReady && painted == succeededMessage,
+        "a test that finished while the gate was shut had its result swallowed for good");
+
     // Issue #626. The constructor COPIES the device list, and the shell enumerates microphones on a
     // background thread and posts the result to the UI context — so the copy is normally taken while
     // the list is still empty. The microphone step then showed an empty picker and "Microphone
