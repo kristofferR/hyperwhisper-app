@@ -32,18 +32,37 @@ public sealed class PulseAudioInputDeviceService : IAudioInputDeviceService
             var values = new List<AudioInputDevice>();
             foreach (var source in document.RootElement.EnumerateArray())
             {
-                if (source.TryGetProperty("monitor_of_sink", out var monitor) && monitor.ValueKind != JsonValueKind.Null) continue;
+                if (IsMonitor(source)) continue;
                 var id = source.TryGetProperty("name", out var name) ? name.GetString() : null;
                 if (string.IsNullOrWhiteSpace(id)) continue;
                 var description = source.TryGetProperty("description", out var label) ? label.GetString() : null;
                 values.Add(new AudioInputDevice(id, string.IsNullOrWhiteSpace(description) ? id : description, id == defaultId));
             }
+            // #627: `pactl get-default-source` can name a sink monitor, which the filter above drops, so no
+            // offerable device carries the flag. `IsDefault` is never rendered — its only two readers pick the
+            // device to use when nothing is chosen, and each then falls back to its own first element: the
+            // workflow to pactl order, the tray to Id order. Promote the first offerable source so both agree.
+            // This is a no-op for the recording path, which already lands on exactly this device.
+            if (values.Count > 0 && !values.Any(value => value.IsDefault)) values[0] = values[0] with { IsDefault = true };
             var key = string.Join('\n', values.Select(value => $"{value.Id}:{value.IsDefault}"));
             if (_lastDeviceKey is not null && _lastDeviceKey != key) RaiseDevicesChanged();
             _lastDeviceKey = key;
             return PlatformResult<IReadOnlyList<AudioInputDevice>>.Success(values);
         }
         catch { return PlatformResult<IReadOnlyList<AudioInputDevice>>.Failure("pulse_devices_failed", "PulseAudio device enumeration failed."); }
+    }
+    // A sink monitor is not a microphone (#627). pactl 16.1 emits no `monitor_of_sink` on a source, so that
+    // documented server field alone matched nothing: the markers that hold are `monitor_source` (the sink name
+    // on a monitor, empty on a real source) and `properties["device.class"] == "monitor"` on pipewire-pulse.
+    private static bool IsMonitor(JsonElement source)
+    {
+        if (source.TryGetProperty("monitor_of_sink", out var sink) && (sink.ValueKind == JsonValueKind.Number
+            || (sink.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(sink.GetString())))) return true;
+        if (source.TryGetProperty("monitor_source", out var monitor) && monitor.ValueKind == JsonValueKind.String
+            && !string.IsNullOrEmpty(monitor.GetString())) return true;
+        if (!source.TryGetProperty("properties", out var properties) || properties.ValueKind != JsonValueKind.Object) return false;
+        return properties.TryGetProperty("device.class", out var deviceClass) && deviceClass.ValueKind == JsonValueKind.String
+            && string.Equals(deviceClass.GetString(), "monitor", StringComparison.OrdinalIgnoreCase);
     }
     private void RaiseDevicesChanged()
     { var handlers = DevicesChanged; if (handlers is null) return; foreach (EventHandler handler in handlers.GetInvocationList()) try { handler(this, EventArgs.Empty); } catch { } }
