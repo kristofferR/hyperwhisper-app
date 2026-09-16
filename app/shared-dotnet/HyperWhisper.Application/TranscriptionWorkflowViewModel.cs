@@ -27,6 +27,7 @@ public sealed class TranscriptionWorkflowViewModel : ViewModelBase, IDisposable
     private bool _canCancel;
     private bool _canTranscribeFile;
     private bool _isImporting;
+    private bool _applyingSnapshot;
     private double _importProgress;
     private CancellationTokenSource? _importCancellation;
     private bool _disposed;
@@ -51,11 +52,62 @@ public sealed class TranscriptionWorkflowViewModel : ViewModelBase, IDisposable
     }
 
     public ObservableCollection<AudioInputDevice> AudioDevices { get; } = new();
+
+    /// <summary>
+    /// Whether the input service offers at least one microphone.
+    /// </summary>
+    /// <remarks>
+    /// Warning: never bind a view to <see cref="AudioDevices"/> through a value converter.
+    ///
+    /// <see cref="AudioDevices"/> is a get-only property over one collection instance that is
+    /// refilled in place, so it never raises <c>PropertyChanged</c>. A converter binding reads it
+    /// exactly once, at bind time, when the list is still empty — and never again. A list binding
+    /// is fine, because that subscribes to <c>CollectionChanged</c>.
+    ///
+    /// The Linux head hid its whole "Audio input" row behind such a converter binding. Every
+    /// microphone was enumerated and the row stayed hidden for the life of the process, so the app
+    /// offered no microphone at all and "Refresh devices" could not recover it (issue #626). This
+    /// property is the binding target instead, and <see cref="ApplySnapshot"/> notifies it.
+    /// </remarks>
+    public bool HasAudioDevices => AudioDevices.Count > 0;
+
+    /// <summary>
+    /// Raised once after <see cref="AudioDevices"/> has been refilled, on the UI context.
+    /// </summary>
+    /// <remarks>
+    /// A view that copies the device list — the Linux onboarding step does, because it owns its own
+    /// picker — needs one signal per refill. <c>CollectionChanged</c> is not that signal: the refill
+    /// clears the collection first, so a copy driven by it sees an empty list and then one partial
+    /// list per device.
+    /// </remarks>
+    public event EventHandler? DevicesChanged;
+
+    /// <summary>
+    /// The microphone the next recording will use.
+    /// </summary>
+    /// <remarks>
+    /// Warning: a null written here is discarded while <see cref="AudioDevices"/> is not empty.
+    ///
+    /// A picker bound two-way to this property writes null when the view that holds it is torn
+    /// down — on the Linux head, every time the user leaves the Home page. The user chose nothing,
+    /// but the null reached the workflow, so the next recording refused with "No audio input device
+    /// is available." until the microphone was picked again by hand. The picker cannot offer "no
+    /// microphone" while it has entries, so a null from it is never a choice.
+    ///
+    /// The picker writes null a second way, and the guard above cannot see it: a refill clears the
+    /// collection first, so the list IS empty at that instant. <see cref="ApplySnapshot"/> raises
+    /// <c>_applyingSnapshot</c> for exactly that window.
+    ///
+    /// A genuinely empty device list still clears the selection: <see cref="ApplySnapshot"/>
+    /// assigns the backing field, not this property.
+    /// </remarks>
     public AudioInputDevice? SelectedAudioDevice
     {
         get => _selectedAudioDevice;
         set
         {
+            if (_applyingSnapshot) return;
+            if (value is null && AudioDevices.Count > 0) return;
             if (!Set(ref _selectedAudioDevice, value)) return;
             _workflow.SelectDevice(value?.Id);
         }
@@ -274,14 +326,62 @@ public sealed class TranscriptionWorkflowViewModel : ViewModelBase, IDisposable
         ApplySnapshot(snapshot);
     }
 
+    /// <summary>
+    /// Brings <see cref="AudioDevices"/> in line with <paramref name="incoming"/> in place, and
+    /// reports whether anything moved.
+    /// </summary>
+    /// <remarks>
+    /// Warning: do not replace this with Clear-then-refill.
+    ///
+    /// Clearing makes every bound picker drop its selection, on every snapshot — and a snapshot
+    /// arrives for each step of a recording or a file transcription. The device list is the same
+    /// list almost every time, so the common case must not touch the collection at all.
+    /// <c>AudioInputDevice</c> is a record, which is what makes the comparison below cheap.
+    /// </remarks>
+    private bool SyncAudioDevices(IReadOnlyList<AudioInputDevice> incoming)
+    {
+        var changed = false;
+        for (var index = 0; index < incoming.Count; index++)
+        {
+            if (index >= AudioDevices.Count) { AudioDevices.Add(incoming[index]); changed = true; }
+            else if (!Equals(AudioDevices[index], incoming[index])) { AudioDevices[index] = incoming[index]; changed = true; }
+        }
+        while (AudioDevices.Count > incoming.Count)
+        {
+            AudioDevices.RemoveAt(AudioDevices.Count - 1);
+            changed = true;
+        }
+        return changed;
+    }
+
     private void ApplySnapshot(TranscriptionWorkflowSnapshot snapshot)
     {
         var completedNow = snapshot.State == TranscriptionWorkflowState.Completed
             && !string.Equals(State, nameof(TranscriptionWorkflowState.Completed), StringComparison.Ordinal);
-        AudioDevices.Clear();
-        foreach (var device in snapshot.AudioDevices) AudioDevices.Add(device);
-        _selectedAudioDevice = AudioDevices.FirstOrDefault(item => item.Id == snapshot.SelectedAudioDeviceId);
-        Notify(nameof(SelectedAudioDevice));
+        // Warning: a bound picker writes null back when the collection it lists is emptied. The
+        // null-while-not-empty guard on SelectedAudioDevice cannot catch that one, because the
+        // list IS empty at that instant. Without the flag the workflow loses its device on every
+        // refresh — and every file transcription raises several.
+        _applyingSnapshot = true;
+        try
+        {
+            var listChanged = SyncAudioDevices(snapshot.AudioDevices);
+            if (listChanged) Notify(nameof(HasAudioDevices));
+            var selected = AudioDevices.FirstOrDefault(item => item.Id == snapshot.SelectedAudioDeviceId);
+            if (listChanged && Equals(selected, _selectedAudioDevice))
+            {
+                // The picker dropped its selection when the collection moved under it, and this
+                // view model's value did not change — so notifying it again publishes a value the
+                // binding has already sent, and the picker stays blank. Publish null first, so the
+                // notification that follows carries a value the binding has to push.
+                _selectedAudioDevice = null;
+                Notify(nameof(SelectedAudioDevice));
+            }
+            _selectedAudioDevice = selected;
+            Notify(nameof(SelectedAudioDevice));
+        }
+        finally { _applyingSnapshot = false; }
+        DevicesChanged?.Invoke(this, EventArgs.Empty);
         if (!_isImporting)
         {
             State = snapshot.State.ToString();
