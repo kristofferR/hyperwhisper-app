@@ -45,6 +45,35 @@ enum LocalAPIAuth {
         return loadOrCreateToken()
     }
 
+    /// The Keychain read, off the main actor. `SecItemCopyMatching` blocks
+    /// indefinitely behind the consent panel macOS raises when the item's ACL
+    /// does not match the running binary's signature; on the main actor that
+    /// froze app bootstrap before `setupGlobalHotkeys()` (issue #655).
+    ///
+    /// `offMainActor` is the shared helper, and its doc asks to be used rather
+    /// than re-derived — this is the call site it was written for. No
+    /// `nonisolated`: the helper's doc is explicit that the decoration removes
+    /// the actor hop and not the thread hop, so on a blocking call it reads as
+    /// the fix while doing nothing, and nothing else in this enum carries it.
+    /// `Task.detached` inside the helper is what leaves the main thread.
+    ///
+    /// The helper offers no serialization, deliberately. `LocalAPIServer` owns
+    /// that, and owns it narrowly. `regenerateToken()` is a delete followed by a
+    /// create and a write over one item, so two of those are serialized on its
+    /// `regenerationWork` chain. `loadOrCreateToken()` writes only when the item
+    /// is ABSENT — the one case that raises no consent panel — so a start runs
+    /// on its own task and is ordered against a regeneration by ownership
+    /// (`LocalAPIServer.tokenOwner`) rather than by queueing behind it.
+    static func loadOrCreateTokenOffMainActor() async -> String {
+        await offMainActor { loadOrCreateToken() }
+    }
+
+    /// `regenerateToken()` off the main actor, for the same reason: it is a
+    /// Keychain delete followed by the same read.
+    static func regenerateTokenOffMainActor() async -> String {
+        await offMainActor { regenerateToken() }
+    }
+
     /// Remove the stored token entirely — used by tests / a future
     /// "reset all" affordance.
     static func deleteToken() {
