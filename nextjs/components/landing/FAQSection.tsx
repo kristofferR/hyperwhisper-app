@@ -93,7 +93,10 @@ export default function FAQSection() {
           {faqKeys.map((key, index) => (
             <div key={key} className="border-b border-gray-800 last:border-b-0">
               <button
+                aria-controls={`faq-panel-${key}`}
+                aria-expanded={openIndex === index}
                 className="w-full px-6 py-4 text-left hover:bg-gray-800/50 transition-colors flex items-center justify-between"
+                id={`faq-trigger-${key}`}
                 onClick={() => toggleFAQ(index)}
               >
                 <span className="text-gray-200 font-medium">
@@ -106,13 +109,19 @@ export default function FAQSection() {
                 />
               </button>
               <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  openIndex === index ? "max-h-96" : "max-h-0"
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  openIndex === index ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                 }`}
+                id={`faq-panel-${key}`}
               >
-                <p className="text-gray-400 px-6 pt-2 pb-6 whitespace-pre-line">
-                  {parseMarkdownLinks(t(`questions.${key}.answer`))}
-                </p>
+                {/* overflow-hidden is load-bearing: it takes this grid item out of
+                    automatic-minimum-size sizing, which is what lets the 0fr track
+                    resolve to 0. Without it every closed panel keeps its full height. */}
+                <div className="overflow-hidden">
+                  <p className="text-gray-400 px-6 pt-2 pb-6 whitespace-pre-line">
+                    {parseMarkdownLinks(t(`questions.${key}.answer`))}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
