@@ -4,6 +4,7 @@ using Avalonia.Media;
 using HyperWhisper.Localization;
 using HyperWhisper.Linux.Localization;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 var tests = new (string Name, Action Run)[]
 {
@@ -21,6 +22,7 @@ var tests = new (string Name, Action Run)[]
     ("production XAML contains no localizable literals", ProductionXamlHasNoLocalizableLiterals),
     ("production code uses catalogued user feedback", ProductionCodeUsesCataloguedFeedback),
     ("settings pages carry no Windows-only control or copy", SettingsPagesMatchWindowsSurface),
+    ("the Local API preferred port is wired to commit once, on every path", LocalApiPortCommitWiringIsIntact),
     ("tray labels are catalogued with RTL metadata", TrayLabelsAreCatalogued),
     ("startup culture selection is bounded", StartupCultureSelectionIsBounded),
 };
@@ -259,6 +261,100 @@ static void SettingsPagesMatchWindowsSurface()
     True(!subtitle.Contains("Windows", StringComparison.OrdinalIgnoreCase),
         "the Linux clipboard subtitle still names Windows");
 }
+
+/// <summary>
+/// The cheap half of #692's guard: is every commit path still WIRED. The numbers a commit produces
+/// are not asserted here and the name does not claim they are — they are pinned for real by
+/// LocalApiPortEntry's own test in the composition harness, which calls the rules, and by the smoke
+/// probe, which TYPES into the field in a real window (MainWindow.axaml.cs, exit codes 26 and 27).
+/// This one costs nothing, runs in CI without an X server, and names the piece of wiring that went
+/// missing.
+///
+/// Parsed as XML, not grepped: the clauses live on one element, and a grep for "Mode=OneWay" would
+/// be satisfied by the attribute sitting on any other control on the page. Numbers are compared as
+/// numbers and the binding is matched with a pattern, so an equivalent spelling — "65535.0",
+/// "Mode = OneWay" — is not a failure on a field that behaves exactly as intended.
+/// </summary>
+static void LocalApiPortCommitWiringIsIntact()
+{
+    var surface = Path.Combine(AppContext.BaseDirectory, "LocalizationSurface");
+    var document = XDocument.Load(Path.Combine(surface, "MainWindow.axaml"));
+    XNamespace xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
+    var port = document.Descendants().FirstOrDefault(element =>
+        element.Name.LocalName == "NumericUpDown"
+        && (string?)element.Attribute(xaml + "Name") == "SettingsLocalApiPort");
+    True(port is not null, "the Local API preferred port is no longer a named NumericUpDown");
+
+    // The bounds the spinner counts inside. Do not raise Maximum to let the view model's own
+    // Math.Clamp do the work: ViewModelBase.Set raises no PropertyChanged when the clamp lands on
+    // the value already stored, so nothing would come back down a OneWay binding and the field
+    // would again disagree with the port the server bound.
+    True(ParsedAttribute(port!, "Minimum") == 0m, "the preferred port's Minimum is no longer 0");
+    True(ParsedAttribute(port!, "Maximum") == 65535m, "the preferred port's Maximum is no longer 65535");
+
+    // OneWay is the fix. A two-way binding writes Settings.LocalApiPort while the digits are still
+    // going in, and that property is what the Local API restart chain listens to, so a partial
+    // number could be bound and written into local-api.json. The path is asserted too: a binding
+    // retargeted at another property with the same mode is not this field.
+    var value = (string?)port!.Attribute("Value") ?? string.Empty;
+    Contains("Settings.LocalApiPort", value, "the preferred port's Value binding path");
+    True(Regex.IsMatch(value, @"Mode\s*=\s*OneWay"),
+        $"the preferred port's Value binding is no longer OneWay, so it commits while typing: '{value}'");
+
+    // ClipValueToMinMax must stay OFF. It clamps at BOTH ends, so "-1" became a committed port 0 —
+    // and 0 is not a refused port, it makes the Local API bind a random one on every launch.
+    // CommitLocalApiPort clamps the high end and refuses the low end instead.
+    True(port.Attribute("ClipValueToMinMax") is null,
+        "ClipValueToMinMax is back on the preferred port: it turns a negative entry into port 0");
+
+    // Every way of finishing an edit has to be wired, because no binding trigger reaches them.
+    Equal("OnLocalApiPortTemplateApplied", (string?)port.Attribute("TemplateApplied"),
+        "the preferred port's Enter/blur wiring (TemplateApplied)");
+    Equal("OnLocalApiPortLostFocus", (string?)port.Attribute("LostFocus"),
+        "the preferred port's commit when focus leaves from the spinner (LostFocus)");
+    Equal("OnLocalApiPortSpinned", (string?)port.Attribute("Spinned"),
+        "the preferred port's commit on a spin (Spinned)");
+
+    // ...and the fourth way is code, not markup: a port typed and left focused dies with the
+    // window unless OnClosing commits it while the settings store is still usable.
+    var code = File.ReadAllText(Path.Combine(surface, "MainWindow.axaml.cs"));
+    var closing = Regex.Match(code, @"private async void OnClosing\(.*?_lifetime\.Cancel\(\);",
+        RegexOptions.Singleline);
+    True(closing.Success, "OnClosing no longer cancels the lifetime, so the close-path guard cannot be placed");
+    Contains("CommitPendingSettingsEdits();", closing.Value,
+        "OnClosing must commit a still-focused settings edit before it cancels the lifetime");
+
+    // The close path has TWO halves and the second one is the one that reaches the disk: the
+    // commit only moves the port into the view model, where it arms a 500ms save that can never
+    // tick, because the window is going. Asserted on the method's own body — a bare mention of
+    // the name is satisfied by the declaration itself.
+    var flush = Regex.Match(code, @"private void CommitPendingSettingsEdits\(\)\r?\n    \{.*?\r?\n    \}",
+        RegexOptions.Singleline);
+    True(flush.Success, "CommitPendingSettingsEdits is gone, so the close path commits nothing");
+    Contains("CommitLocalApiPort(", flush.Value,
+        "the close path must commit a still-focused preferred port");
+    Contains("SaveCommand.Execute(null)", flush.Value,
+        "the close path must FLUSH the debounced save; without it the typed port reaches the view "
+        + "model at quit and is never written to disk");
+
+    // Enter and blur are wired in code, on the TEMPLATED text box. A bare identifier grep is
+    // satisfied by an unreferenced private declaration — the registration is what makes Enter
+    // commit rather than dead code, and an unreferenced private method raises no compiler
+    // diagnostic, so nothing else would notice it going.
+    True(Regex.IsMatch(code, @"AddHandler\(\s*InputElement\.KeyDownEvent,\s*OnLocalApiPortBoxKeyDown,"
+            + @"\s*\r?\n?\s*RoutingStrategies\.Tunnel,\s*handledEventsToo:\s*true\)"),
+        "the preferred port no longer commits on Enter: the tunnel-phase KeyDown handler is not "
+        + "registered on the templated text box");
+    True(Regex.IsMatch(code, @"AddHandler\(\s*InputElement\.LostFocusEvent,\s*OnLocalApiPortBoxLostFocus,"
+            + @"\s*\r?\n?\s*RoutingStrategies\.Bubble,\s*handledEventsToo:\s*true\)"),
+        "the preferred port no longer commits the RAW text on blur: the LostFocus handler is not "
+        + "registered on the templated text box");
+}
+
+/// <summary>A XAML numeric attribute read as a number, so an equivalent spelling still passes.</summary>
+static decimal? ParsedAttribute(XElement element, string name)
+    => decimal.TryParse((string?)element.Attribute(name), System.Globalization.NumberStyles.Number,
+        System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
 
 static void TrayLabelsAreCatalogued()
 {

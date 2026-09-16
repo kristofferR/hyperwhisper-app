@@ -1465,12 +1465,60 @@
             </Grid>
             <Border Classes="divider tight"/>
             <!-- Linux-only: the preferred port the server tries before falling back. It takes the
-                 same 11px secondary label as the rows above so it does not shout over them. -->
+                 same 11px secondary label as the rows above so it does not shout over them.
+
+                 This is the one field on this head whose value leaves the process — it is what the
+                 Local API binds and what local-api.json advertises — so #692 gave it an EXPLICIT
+                 commit path instead of a binding trigger, the same shape SettingsAutoDeleteDays
+                 above already uses.
+
+                 Mode=OneWay is the load-bearing half: the control never writes Settings.LocalApiPort
+                 by itself, so the digits of a half-typed port never reach the source. Be exact about
+                 what that buys — the restart is NOT one per keystroke. Nothing subscribes to this
+                 property; a change arms the 500ms settings auto-save, whose tick calls
+                 SettingsViewModel.Save(), which raises LocalApiSettingsChanged for ANY saved setting
+                 (the theme and the recordings folder restart the host just as readily). So typing at
+                 speed already collapsed into one restart, and it was a PAUSE between digits that
+                 bound a partial number and rewrote local-api.json with a port that was about to die.
+                 Every way of finishing an edit then lands on one method,
+                 CommitLocalApiPort: Enter and blur through the templated text box (wired in
+                 OnLocalApiPortTemplateApplied, so both read the RAW text before NumericUpDown's own
+                 commit rewrites it), focus leaving from the spinner buttons through LostFocus here,
+                 a spin through Spinned, and a still-focused edit at quit through OnClosing. A
+                 binding trigger cannot reach the last four. Each of them commits ONCE: the blur
+                 handler here skips an event that came from the text box, which the box's own
+                 handler has already committed.
+
+                 The spin commits what was TYPED when an entry is still pending, not Value. The
+                 control swallows an out-of-range entry and leaves Value on the last in-range
+                 prefix, so a spin after "70000" committed 7000 — #692's own number — while Enter
+                 and blur clamped correctly.
+
+                 ClipValueToMinMax is deliberately ABSENT. It clamps at parse time at BOTH ends, so
+                 "-1" became a committed port 0. The commit method clamps the high end (70000 ->
+                 65535, the #692 fault) and REFUSES anything below 0 or unparseable by restoring
+                 the stored port, which is what this field did before #692 was fixed. A typed 0 is
+                 NOT refused: Minimum="0", this row's own label says the port falls back to an
+                 available loopback port, and the host binds an ephemeral port for 0 on purpose.
+                 See LocalApiPortEntry.Committed.
+
+                 Maximum bounds the SPINNER, and nothing else now that the clamp is in C# — measured:
+                 raising it to 99999 leaves every behaviour above intact, so the markup guard's
+                 Maximum clause is a consistency check and not a #692 regression guard. Do not raise
+                 it in order to lean on SettingsViewModel.LocalApiPort's own Math.Clamp instead:
+                 ViewModelBase.Set raises no PropertyChanged when the clamp lands on the value
+                 already stored, so nothing would come back down a OneWay binding and the box would
+                 keep reading 70000.
+
+                 FormatString="0" keeps the box showing an integer. Increment is a decimal, so a spin
+                 leaves Value at 60001.0, and without a format the box read "4001.0". -->
             <Grid ColumnDefinitions="100,*,Auto">
               <TextBlock Classes="smallLabel" VerticalAlignment="Center"
                          Text="{ReflectionBinding [linux.ui.preferred.port.falls.back.to.an.available.loopback.port], Source={StaticResource Localization}}"/>
               <NumericUpDown Grid.Column="2" x:Name="SettingsLocalApiPort" Width="140" Minimum="0" Maximum="65535"
-                             Value="{Binding Settings.LocalApiPort}"/>
+                             FormatString="0" TemplateApplied="OnLocalApiPortTemplateApplied"
+                             Spinned="OnLocalApiPortSpinned" LostFocus="OnLocalApiPortLostFocus"
+                             Value="{Binding Settings.LocalApiPort, Mode=OneWay}"/>
             </Grid>
             <TextBlock Classes="smallLabel" Margin="0,12,0,0"
                        Text="{ReflectionBinding [settings.localApi.helperAuth], Source={StaticResource Localization}}"/>
