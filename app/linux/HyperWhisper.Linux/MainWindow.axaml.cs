@@ -1471,17 +1471,18 @@ public partial class MainWindow : Window
 
         var modifierText = modifiers.Count == 0 ? string.Empty : string.Join(", ", modifiers);
 
-        if (key.Length == 0)
+        // Fails CLOSED, and deliberately has no per-verdict arm to forget: anything that is not an
+        // explicit Accept stops here, before WriteSetting, so a verdict added to the enum later
+        // cannot fall through and be armed globally. Ignore is the one silent refusal -- nothing
+        // held yet is not a capture -- and ErrorMessageKey returns null only for that and Accept;
+        // the "shortcut recorder verdicts all carry a catalogued message" test enumerates the enum
+        // and fails if any other verdict has no message.
+        var verdict = LinuxShortcutRecorderRules.Evaluate(modifiers.Count, key);
+        if (verdict != ShortcutRecorderVerdict.Accept)
         {
-            // Nothing held at all is not a capture yet.
-            if (modifiers.Count == 0) return;
-            // Windows rejects a SINGLE bare modifier -- it would steal ordinary typing -- but
-            // allows a deliberate multi-modifier chord such as Ctrl+Alt or Ctrl+Win.
-            if (modifiers.Count == 1)
-            {
-                ShowShortcutError(box, L("linux.shortcuts.error.singleModifier"));
-                return;
-            }
+            if (LinuxShortcutRecorderRules.ErrorMessageKey(verdict) is { } errorKey)
+                ShowShortcutError(box, L(errorKey));
+            return;
         }
 
         if (FindShortcutDuplicate(role.Tag, modifierText, key) is { } duplicate)
@@ -4089,6 +4090,89 @@ internal sealed class LinuxTrayActionHandler : IDisposable
     {
         _disposed = true;
     }
+}
+
+internal enum ShortcutRecorderVerdict { Accept, Ignore, SingleModifier, TypingKey }
+
+/// <summary>
+/// The recorder's verdict on a captured chord, kept free of Avalonia types so it can be exercised
+/// without a window.
+///
+/// The rule this class adds for #628 is a property of the KEY, not of the role and not of the
+/// session. A chord with no modifier fires on a plain press of that key:
+/// <list type="bullet">
+/// <item>On a true Xorg session the chord is grabbed with
+/// <c>XGrabKey(..., ownerEvents: false)</c> on the root window (X11GlobalShortcutService.cs:293),
+/// which CONSUMES the press -- no other application ever sees it. That is #628 as reported.</item>
+/// <item>On a Wayland/evdev session nothing is consumed: the reader opens <c>/dev/input/event*</c>
+/// read-only and never calls <c>EVIOCGRAB</c>. But <c>EvdevShortcutFilter</c> matches a binding
+/// with no modifier group on every press of its key (EvdevShortcutFilter.cs:69-70), so the ACTION
+/// still fires while the user types. Same fault, keystroke left in place.</item>
+/// </list>
+/// So the rule needs no session argument and no role argument: a bare key that ordinary typing
+/// produces is refused everywhere.
+///
+/// The exception is a key ordinary typing never produces -- F1-F24 and Escape. Both are grabbable
+/// on both backends (X11GlobalShortcutService.cs:246,251; EvdevShortcutMapper.MapKey), so a bare
+/// F13 toggle and the shipped bare Escape cancel (SettingsViewModel.cs:348) stay recordable for
+/// every role, exactly as on main.
+///
+/// This is NOT Windows parity. <c>ShortcutValidationService.ValidateActionShortcut</c> carries no
+/// such rule -- it refuses a single bare modifier and nothing else -- and the Windows recorder DOES
+/// commit a bare letter (ShortcutRecorderBox.xaml.cs:228-243). The reason the same chord is safe
+/// there and unsafe here is the platform asymmetry: Windows routes a bare key through a
+/// NON-CONSUMING low-level keyboard hook (KeyboardShortcutService.cs:321-326), so the press still
+/// reaches the focused application, whereas X11's <c>XGrabKey</c> has no non-consuming equivalent.
+/// </summary>
+internal static class LinuxShortcutRecorderRules
+{
+    internal static ShortcutRecorderVerdict Evaluate(int modifierCount, string key)
+    {
+        if (key.Length == 0)
+        {
+            // Nothing held at all is not a capture yet.
+            if (modifierCount == 0) return ShortcutRecorderVerdict.Ignore;
+            // A SINGLE bare modifier would steal ordinary typing, but a deliberate multi-modifier
+            // chord such as Ctrl+Alt or Ctrl+Win is a real shortcut -- and Ctrl+Alt is the product
+            // default toggle chord, so it has to stay recordable. Unchanged from main.
+            return modifierCount == 1
+                ? ShortcutRecorderVerdict.SingleModifier
+                : ShortcutRecorderVerdict.Accept;
+        }
+
+        if (modifierCount > 0) return ShortcutRecorderVerdict.Accept;
+
+        // #628: a bare letter was accepted, saved and armed, so every press of that letter fired
+        // the action -- and on Xorg never reached the application the user was typing into.
+        return IsDedicatedKey(key) ? ShortcutRecorderVerdict.Accept : ShortcutRecorderVerdict.TypingKey;
+    }
+
+    /// <summary>
+    /// A key that ordinary typing never produces, so holding no modifier is safe. The names are the
+    /// ones <c>MainWindow.MapShortcutKey</c> emits; everything else it can emit -- a letter, a
+    /// digit, Space, Tab, Enter, Backspace, Delete, Insert, Home, End, PageUp, PageDown, an arrow
+    /// and every OEM punctuation key -- appears in a normal keystroke stream.
+    /// </summary>
+    private static bool IsDedicatedKey(string key)
+        => string.Equals(key, "Escape", StringComparison.Ordinal)
+            || (key.Length >= 2 && key[0] == 'F'
+                && int.TryParse(key.AsSpan(1), System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var number)
+                && number is >= 1 and <= 24);
+
+    /// <summary>
+    /// The catalogue key a verdict paints, or null when the verdict paints nothing. Accept writes
+    /// the chord and Ignore is not a capture yet, so those two are the only silent outcomes; every
+    /// other verdict refuses a chord and owes the user a sentence. Keeping the map here rather
+    /// than in the key-down handler is what lets a test enumerate the enum and fail when a new
+    /// rejecting verdict arrives with no message.
+    /// </summary>
+    internal static string? ErrorMessageKey(ShortcutRecorderVerdict verdict) => verdict switch
+    {
+        ShortcutRecorderVerdict.SingleModifier => "linux.shortcuts.error.singleModifier",
+        ShortcutRecorderVerdict.TypingKey => "linux.shortcuts.error.typingKey",
+        _ => null,
+    };
 }
 
 internal static class LinuxTrayMicrophoneSelector

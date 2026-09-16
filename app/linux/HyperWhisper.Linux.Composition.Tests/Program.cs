@@ -4,7 +4,9 @@ using HyperWhisper.Platform.Abstractions.Audio;
 using System.Runtime.Versioning;
 using HyperWhisper.Data.Entities;
 using HyperWhisper.Linux;
+using HyperWhisper.Linux.Localization;
 using HyperWhisper.Linux.Overlay;
+using System.Globalization;
 using HyperWhisper.PortableApplication.Persistence;
 using HyperWhisper.PortableApplication.Transcription;
 using HyperWhisper.LocalInference;
@@ -52,6 +54,8 @@ var tests = new (string Name, Func<Task> Run)[]
     ("mode cycling is deterministic and wraps", ModeCyclingIsDeterministic),
     ("typed tray actions route without unsafe overlap", TypedTrayActionsRouteSafely),
     ("tray microphone selection is deterministic", TrayMicrophoneSelectionIsDeterministic),
+    ("shortcut recorder rules judge the key, not the role", ShortcutRecorderRulesJudgeTheKey),
+    ("shortcut recorder verdicts all carry a catalogued message", ShortcutRecorderVerdictsCarryMessages),
     ("diagnostic capabilities fail closed from platform evidence", DiagnosticCapabilitiesFailClosed),
     ("lifecycle diagnostics expose only fixed fields", LifecycleDiagnosticsAreContentFree),
     ("M4A storage performs a real private FFmpeg encode", M4aStorageEncodes),
@@ -564,6 +568,85 @@ static Task TrayMicrophoneSelectionIsDeterministic()
         "unknown selection did not recover from the default microphone");
     Assert(LinuxTrayMicrophoneSelector.SelectAdjacent([], null, 1) is null,
         "empty microphone list produced a selection");
+    return Task.CompletedTask;
+}
+
+static Task ShortcutRecorderRulesJudgeTheKey()
+{
+    // Evaluate takes no role and no session: the hazard is a property of the KEY, so every one of
+    // these verdicts holds for all five recorder boxes -- toggle, cancel, changeMode, streaming
+    // and push-to-talk alike -- and on Xorg and Wayland alike. That is enforced by the signature,
+    // which is why there is no role argument to pin.
+
+    // Every key MainWindow.MapShortcutKey can emit that ordinary typing also produces. Bare, each
+    // one fires the action on a normal keystroke: consumed by XGrabKey on Xorg (#628) and left in
+    // place but still firing under the evdev reader on Wayland.
+    string[] typingKeys =
+    [
+        "A", "Z", "Digit0", "Digit9", "Space", "Enter", "Tab", "Backspace", "Delete", "Insert",
+        "Home", "End", "PageUp", "PageDown", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+        "Period", "Comma", "Minus", "Equal", "Slash", "Backslash", "Semicolon", "Quote",
+        "LeftBracket", "RightBracket", "Grave",
+    ];
+    foreach (var key in typingKeys)
+        Assert(LinuxShortcutRecorderRules.Evaluate(0, key) == ShortcutRecorderVerdict.TypingKey,
+            $"a bare {key} was accepted; ordinary typing produces it, so the action would fire while the user types");
+
+    // The dedicated keys, which ordinary typing never produces. Both backends can bind them
+    // (X11GlobalShortcutService.cs:246,251 and EvdevShortcutMapper.MapKey), a bare F13 toggle was
+    // accepted on main, and bare Escape is the shipped cancel default (SettingsViewModel.cs:348).
+    foreach (var key in new[] { "F1", "F5", "F10", "F11", "F12", "F13", "F24", "Escape" })
+        Assert(LinuxShortcutRecorderRules.Evaluate(0, key) == ShortcutRecorderVerdict.Accept,
+            $"a bare {key} was refused; it is a dedicated key, accepted on main, and refusing it makes a working shortcut unrecordable");
+    // "F" alone and "F25" are not in the allow-list, so the parse cannot be widened by accident.
+    foreach (var key in new[] { "F", "F0", "F25", "F99" })
+        Assert(LinuxShortcutRecorderRules.Evaluate(0, key) == ShortcutRecorderVerdict.TypingKey,
+            $"{key} was treated as a function key");
+
+    // Any modifier at all makes the chord deliberate, whatever the key.
+    foreach (var key in new[] { "A", "Space", "Grave", "F13", "Escape" })
+        Assert(LinuxShortcutRecorderRules.Evaluate(1, key) == ShortcutRecorderVerdict.Accept,
+            $"{key} with one modifier was refused");
+    Assert(LinuxShortcutRecorderRules.Evaluate(2, "A") == ShortcutRecorderVerdict.Accept,
+        "a key with two modifiers was refused");
+
+    // The modifier-only rules are exactly main's and this change does not touch them.
+    Assert(LinuxShortcutRecorderRules.Evaluate(0, "") == ShortcutRecorderVerdict.Ignore,
+        "nothing held stopped being silently ignored");
+    Assert(LinuxShortcutRecorderRules.Evaluate(1, "") == ShortcutRecorderVerdict.SingleModifier,
+        "a single bare modifier stopped being refused");
+    foreach (var count in new[] { 2, 3 })
+        Assert(LinuxShortcutRecorderRules.Evaluate(count, "") == ShortcutRecorderVerdict.Accept,
+            $"a deliberate {count}-modifier chord was refused; Ctrl+Alt is the shipped toggle default");
+    return Task.CompletedTask;
+}
+
+static Task ShortcutRecorderVerdictsCarryMessages()
+{
+    // OnShortcutBoxKeyDown has no per-verdict arm any more: it refuses everything that is not
+    // Accept and asks ErrorMessageKey what to paint. That only fails safely if every rejecting
+    // verdict names a key AND the key is in the catalogue, so enumerate the enum rather than
+    // hand-listing the members a future change would forget to extend.
+    using var strings = new AvaloniaLocalizationBridge(CultureInfo.GetCultureInfo("en"));
+    foreach (var verdict in Enum.GetValues<ShortcutRecorderVerdict>())
+    {
+        var messageKey = LinuxShortcutRecorderRules.ErrorMessageKey(verdict);
+        if (verdict is ShortcutRecorderVerdict.Accept or ShortcutRecorderVerdict.Ignore)
+        {
+            Assert(messageKey is null,
+                $"{verdict} writes or ignores the chord and must paint nothing, but it names {messageKey}");
+            continue;
+        }
+        Assert(messageKey is not null,
+            $"the {verdict} verdict refuses a chord with no message, so the recorder would refuse silently; add a key to LinuxShortcutRecorderRules.ErrorMessageKey");
+        var message = strings.GetRequired(messageKey!);
+        Assert(!string.IsNullOrWhiteSpace(message), $"{verdict} maps to blank catalogue entry {messageKey}");
+        // The user is told what to press, not told to press a modifier on its own: Evaluate judges
+        // every KeyDown alone, so "hold Ctrl and press the key again" walks the user into the
+        // singleModifier refusal on the very next press.
+        Assert(!message.Contains("again", StringComparison.OrdinalIgnoreCase),
+            $"{messageKey} asks for a second press; every KeyDown is judged on its own, so that instruction paints a contradictory refusal");
+    }
     return Task.CompletedTask;
 }
 
