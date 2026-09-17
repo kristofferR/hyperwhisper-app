@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>En ukjent feil oppstod</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Bruk strømming med trykk for å snakke</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Slå på Strømming og Trykk for å snakke. Velg tasten du holder inne under Innstillinger → Snarveier.</value>
+  </data>
 </root>

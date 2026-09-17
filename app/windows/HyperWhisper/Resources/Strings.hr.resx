@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Došlo je do nepoznate greške</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Koristi strujanje uz Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Uključite strujanje i Push to Talk. Odaberite tipku koju ćete držati u Postavkama → Prečaci tipkovnice.</value>
+  </data>
 </root>

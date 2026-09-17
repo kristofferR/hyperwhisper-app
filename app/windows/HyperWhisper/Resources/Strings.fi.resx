@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Tapahtui tuntematon virhe</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Käytä suoratoistoa paina ja puhu -toiminnossa</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Ota suoratoisto ja paina ja puhu käyttöön. Valitse painettava näppäin kohdassa Asetukset → Pikanäppäimet.</value>
+  </data>
 </root>

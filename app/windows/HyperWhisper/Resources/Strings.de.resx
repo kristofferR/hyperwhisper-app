@@ -2776,4 +2776,10 @@ Sie können es später erneut herunterladen.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Es ist ein unbekannter Fehler aufgetreten</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Live-Übertragung für Push-to-Talk verwenden</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Aktivieren Sie Live-Übertragung und Push-to-Talk. Wählen Sie die zu haltende Taste unter Einstellungen → Tastaturkürzel.</value>
+  </data>
 </root>

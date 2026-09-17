@@ -2776,4 +2776,10 @@
   <data name="app.unknown.error" xml:space="preserve">
     <value>Произошла неизвестная ошибка</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Потоковая передача в режиме «Нажать для разговора»</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Включите потоковую передачу и режим «Нажать для разговора». Выберите удерживаемую клавишу в Параметры → Сочетания клавиш.</value>
+  </data>
 </root>

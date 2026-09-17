@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>S'ha produït un error desconegut</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Utilitza la transmissió en temps real amb el mode Prémer per parlar</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Activa la transmissió en temps real i el mode Prémer per parlar. Tria la tecla que mantindràs premuda a Configuració → Dreceres de teclat.</value>
+  </data>
 </root>

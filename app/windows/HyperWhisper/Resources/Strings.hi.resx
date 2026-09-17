@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>एक अज्ञात त्रुटि हुई</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>पुश टू टॉक के लिए स्ट्रीमिंग का उपयोग करें</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>स्ट्रीमिंग और पुश टू टॉक चालू करें। सेटिंग्स → कीबोर्ड शॉर्टकट में दबाकर रखने वाली कुंजी चुनें।</value>
+  </data>
 </root>

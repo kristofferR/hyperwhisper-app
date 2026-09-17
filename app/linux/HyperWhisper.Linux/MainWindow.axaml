@@ -918,6 +918,12 @@
                 <TextBlock x:Name="StreamingShortcutBoxError" Classes="shortcutError"/>
               </StackPanel>
             </Grid>
+          <StackPanel Margin="0,14,0,0">
+            <CheckBox IsChecked="{Binding Settings.PushToTalkUsesStreaming}" IsEnabled="{Binding Settings.CanUsePushToTalkStreaming}"
+                      Content="{ReflectionBinding [settings.shortcuts.pushToTalk.streaming.title], Source={StaticResource Localization}}"/>
+            <TextBlock Text="{ReflectionBinding [settings.shortcuts.pushToTalk.streaming.subtitle], Source={StaticResource Localization}}"
+                       Classes="caption" TextWrapping="Wrap" Margin="0,4,0,0"/>
+          </StackPanel>
           </StackPanel>
         </Border>
 
@@ -1677,6 +1683,12 @@
             </StackPanel>
             <CheckBox Grid.Column="1" x:Name="SettingsPushToTalkDoubleLock" IsChecked="{Binding Settings.PushToTalkDoublePressLock}" VerticalAlignment="Center"/>
           </Grid>
+          <StackPanel Margin="0,14,0,0">
+            <CheckBox IsChecked="{Binding Settings.PushToTalkUsesStreaming}" IsEnabled="{Binding Settings.CanUsePushToTalkStreaming}"
+                      Content="{ReflectionBinding [settings.shortcuts.pushToTalk.streaming.title], Source={StaticResource Localization}}"/>
+            <TextBlock Text="{ReflectionBinding [settings.shortcuts.pushToTalk.streaming.subtitle], Source={StaticResource Localization}}"
+                       Classes="caption" TextWrapping="Wrap" Margin="0,4,0,0"/>
+          </StackPanel>
         </StackPanel></Border>
         <Button x:Name="SettingsResetShortcuts" Content="{ReflectionBinding [settings.shortcuts.reset.button], Source={StaticResource Localization}}" Command="{Binding Settings.ResetShortcutsCommand}" HorizontalAlignment="Left" Click="OnShortcutsReset"/>
       </StackPanel></ScrollViewer>

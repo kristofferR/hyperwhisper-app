@@ -31,6 +31,7 @@ internal sealed class LinuxInteractionRecordingSession : IInteractionRecordingSe
     private bool _showingCancelConfirmation;
     private TextInjectionOutcome? _lastInjectionOutcome;
     private readonly object _liveDeliveryGate = new();
+    private bool _deferLiveTextDelivery;
     private Task _liveDeliveryTail = Task.CompletedTask;
     private CancellationTokenSource? _liveDeliveryCancellation;
     private readonly StringBuilder _liveFinalText = new();
@@ -103,7 +104,7 @@ internal sealed class LinuxInteractionRecordingSession : IInteractionRecordingSe
         CancellationToken cancellationToken)
     {
         await ReportAsync(DiagnosticComponent.Audio, DiagnosticOutcome.Started);
-        if (kind == InteractionRecordingKind.Streaming && !_viewModel.Settings.StreamingEnabled)
+        if (kind != InteractionRecordingKind.Batch && !_viewModel.Settings.StreamingEnabled)
             return PlatformResult.Failure("interaction.streaming_disabled", "Enable live transcription before starting a streaming session.");
         if (IsActive) return PlatformResult.Failure("interaction.already_recording", "A transcription is already active.");
         _mode = _viewModel.Modes.Selected ?? _viewModel.Modes.Items.FirstOrDefault(item => item.IsDefault)
@@ -137,7 +138,8 @@ internal sealed class LinuxInteractionRecordingSession : IInteractionRecordingSe
         else if (_mode.EnableScreenOCR)
             await ReportAsync(DiagnosticComponent.Portal, DiagnosticOutcome.Succeeded);
 
-        _streaming = kind == InteractionRecordingKind.Streaming;
+        _streaming = kind != InteractionRecordingKind.Batch;
+        _deferLiveTextDelivery = kind == InteractionRecordingKind.PushToTalkStreaming;
         if (_streaming)
         {
             BeginLiveDelivery();
@@ -428,7 +430,9 @@ internal sealed class LinuxInteractionRecordingSession : IInteractionRecordingSe
             injectionText = separator + update.Text;
             _liveFinalText.Append(injectionText);
             token = _liveDeliveryCancellation.Token;
-            if (!_viewModel.Settings.PasteResultText) return;
+            // uinput pastes with Ctrl+V. A physically held PTT modifier would alter
+            // that chord, so preview the stream and deliver once after release.
+            if (_deferLiveTextDelivery || !_viewModel.Settings.PasteResultText) return;
             _liveDeliveryTail = DeliverLiveFinalAsync(_liveDeliveryTail, injectionText, token);
         }
     }
@@ -539,6 +543,7 @@ internal sealed class LinuxInteractionRecordingSession : IInteractionRecordingSe
         try { liveDelivery?.Cancel(); } catch (ObjectDisposedException) { }
         liveDelivery?.Dispose();
         _streaming = false;
+        _deferLiveTextDelivery = false;
         _liveTranscript = null;
         _context = null;
         _mode = null;

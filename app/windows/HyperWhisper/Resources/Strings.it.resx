@@ -2776,4 +2776,10 @@ Potrai scaricarlo di nuovo in seguito.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Si è verificato un errore sconosciuto</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Usa lo streaming con la modalità Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Attiva lo streaming e la modalità Push to Talk. Scegli il tasto da tenere premuto in Impostazioni → Scorciatoie da Tastiera.</value>
+  </data>
 </root>

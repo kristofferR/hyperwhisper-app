@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Der opstod en ukendt fejl</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Brug streaming med tryk for at tale</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Slå Streaming og Tryk for at tale til. Vælg tasten i Indstillinger → Genveje.</value>
+  </data>
 </root>

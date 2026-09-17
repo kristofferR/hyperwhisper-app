@@ -112,6 +112,7 @@ public sealed partial class ApplicationBackupService(
         linuxSettings["pushToTalkShortcutModifiers"] = _settings.Get("pushToTalkShortcutModifiers", "None");
         linuxSettings["pushToTalkShortcutKey"] = _settings.Get("pushToTalkShortcutKey", string.Empty);
         linuxSettings["pushToTalkDoublePressLock"] = _settings.Get("pushToTalkDoublePressLock", false);
+        linuxSettings["pushToTalkUsesStreaming"] = _settings.Get("pushToTalkUsesStreaming", false);
         linuxSettings["autoIncreaseMicVolume"] = _settings.Get("autoIncreaseMicVolume", false);
         linuxSettings["keepMicrophoneWarm"] = _settings.Get("keepMicrophoneWarm", false);
         linuxSettings["audioEnvironmentPolicy"] = _settings.Get("audioEnvironmentPolicy", "unchanged");

@@ -2780,4 +2780,10 @@
   <data name="app.unknown.error" xml:space="preserve">
     <value>发生未知错误</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>按住说话时使用流式转录</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>启用流式转录和按住说话。在「设置 → 键盘快捷键」中选择要按住的按键。</value>
+  </data>
 </root>

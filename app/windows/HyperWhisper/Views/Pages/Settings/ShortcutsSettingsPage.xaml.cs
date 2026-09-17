@@ -87,6 +87,7 @@ public partial class ShortcutsSettingsPage : Page
         PushToTalkCustomBox.DisplayText = settings.PushToTalk.CustomShortcut?.ToDisplayString()
             ?? Localization.Loc.S("settings.shortcuts.pushToTalk.unassigned");
         PushToTalkDoublePressBox.IsChecked = settings.PushToTalk.DoublePressLock;
+        PushToTalkStreamingBox.IsChecked = settings.PushToTalkUsesStreaming;
     }
 
     /// <summary>
@@ -206,9 +207,15 @@ public partial class ShortcutsSettingsPage : Page
         UpdatePushToTalkVisibility();
     }
 
+    private void PushToTalkStreaming_Click(object sender, RoutedEventArgs e)
+    {
+        _settingsService.PushToTalkUsesStreaming = PushToTalkStreamingBox.IsChecked == true;
+    }
+
     private void UpdatePushToTalkVisibility()
     {
         var mode = GetSelectedPushToTalkMode();
+        PushToTalkStreamingBox.IsEnabled = mode != PushToTalkMode.Disabled && _settingsService.StreamingEnabled;
         var modifierVisibility = mode == PushToTalkMode.Modifier ? Visibility.Visible : Visibility.Collapsed;
         var customVisibility = mode == PushToTalkMode.Custom ? Visibility.Visible : Visibility.Collapsed;
 

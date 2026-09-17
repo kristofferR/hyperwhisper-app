@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Óþekkt villa kom upp</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Nota streymi með því að halda takka inni</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Kveiktu á streymi og Ýta til að tala. Veldu takka í Stillingar → Lyklaborðsflýtileiðir og haltu honum inni til að tala.</value>
+  </data>
 </root>

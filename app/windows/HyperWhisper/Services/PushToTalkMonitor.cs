@@ -269,6 +269,9 @@ public sealed class PushToTalkMonitor : IDisposable, PlatformContracts.IPushToTa
         {
             int msg = (int)wParam;
             var hookStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+            // Streamed text and modifier release/restore events are not physical PTT input.
+            if ((hookStruct.flags & 0x10) != 0) // LLKHF_INJECTED
+                return CallNextHookEx(_hookId, nCode, wParam, lParam);
             int vkCode = (int)hookStruct.vkCode;
 
             bool isKeyDown = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;

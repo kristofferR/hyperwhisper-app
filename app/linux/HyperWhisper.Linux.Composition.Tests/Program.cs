@@ -27,6 +27,10 @@ var tests = new (string Name, Func<Task> Run)[]
     ("stop exception unwinds injection session", StopExceptionUnwindsInjection),
     ("secure completion preserves clipboard", SecureCompletionPreservesClipboard),
     ("push to talk starts stops and cancels", PushToTalkStartsStopsAndCancels),
+    ("streaming push to talk owns its held session", StreamingPushToTalkOwnsSession),
+    ("streaming push to talk cancels connection on release", StreamingPushToTalkCancelsStartup),
+    ("streaming push to talk preserves defaults and unrelated sessions", StreamingPushToTalkRouting),
+    ("streaming push to talk defers reconfiguration until release", StreamingPushToTalkDefersConfiguration),
     ("conflicting shortcuts are rejected", ConflictingShortcutsAreRejected),
     ("reconfiguration does not duplicate shortcut readers", ReconfigurationDoesNotDuplicateReaders),
     ("interaction actions are atomic and content-free", InteractionActionsAreAtomicAndContentFree),
@@ -883,6 +887,114 @@ static async Task PushToTalkStartsStopsAndCancels()
         "PTT interference did not safely cancel");
 }
 
+static LinuxInteractionConfiguration StreamingPushToTalkConfiguration() => LinuxInteractionConfiguration.Default with
+{
+    StreamingEnabled = true,
+    PushToTalkUsesStreaming = true,
+    PushToTalk = new PushToTalkConfiguration(PushToTalkMode.Modifier, ModifierSide.RightAlt),
+};
+
+static async Task StreamingPushToTalkOwnsSession()
+{
+    var fixture = new InteractionFixture();
+    using var coordinator = fixture.Create();
+    Assert(coordinator.ConfigureAndStart(StreamingPushToTalkConfiguration()).IsSuccess, "configure failed");
+    fixture.PushToTalk.RaisePressed();
+    await UntilAsync(() => fixture.Recording.IsActive);
+    Assert(fixture.Recording.IsStreaming, "PTT started batch instead of streaming");
+    Assert(fixture.Recording.StartedKind == InteractionRecordingKind.PushToTalkStreaming, "held streaming did not select deferred text delivery");
+    fixture.Recording.StopGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    fixture.PushToTalk.RaiseReleased();
+    fixture.PushToTalk.RaiseReleased();
+    await UntilAsync(() => fixture.Recording.StopCount == 1);
+    fixture.PushToTalk.RaisePressed();
+    Assert(fixture.Recording.StartCount == 1, "a new hold interrupted transcript drain");
+    fixture.Recording.StopGate.SetResult();
+    await UntilAsync(() => !fixture.Recording.IsActive);
+    // Resume on the dispatch queue after the stop continuation releases ownership.
+    await coordinator.StopRecordingAsync();
+    fixture.PushToTalk.RaisePressed();
+    await UntilAsync(() => fixture.Recording.StartCount == 2);
+    fixture.PushToTalk.RaiseInterfered();
+    await UntilAsync(() => fixture.Recording.CancelCount == 1);
+    Assert(fixture.Recording.StopCount == 1, "interference committed a streaming session");
+}
+
+static async Task StreamingPushToTalkCancelsStartup()
+{
+    var fixture = new InteractionFixture();
+    fixture.Recording.StartGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    using var coordinator = fixture.Create();
+    Assert(coordinator.ConfigureAndStart(StreamingPushToTalkConfiguration()).IsSuccess, "configure failed");
+    fixture.PushToTalk.RaisePressed();
+    await UntilAsync(() => fixture.Recording.StartCount == 1);
+    fixture.PushToTalk.RaiseReleased();
+    await UntilAsync(() => fixture.Recording.CancelledStarts == 1);
+    await coordinator.StopRecordingAsync();
+    Assert(!fixture.Recording.IsActive && fixture.Recording.StopCount == 0, "release allowed a late streaming start");
+    fixture.Recording.StartGate = null;
+    fixture.PushToTalk.RaisePressed();
+    await UntilAsync(() => fixture.Recording.IsActive);
+    fixture.PushToTalk.RaiseReleased();
+    await UntilAsync(() => fixture.Recording.StopCount == 1);
+}
+
+static async Task StreamingPushToTalkRouting()
+{
+    foreach (var config in new[]
+    {
+        StreamingPushToTalkConfiguration() with { StreamingEnabled = false },
+        StreamingPushToTalkConfiguration() with { PushToTalkUsesStreaming = false },
+    })
+    {
+        var fixture = new InteractionFixture();
+        using var coordinator = fixture.Create();
+        Assert(coordinator.ConfigureAndStart(config).IsSuccess, "configure failed");
+        fixture.PushToTalk.RaisePressed();
+        await UntilAsync(() => fixture.Recording.IsActive);
+        Assert(!fixture.Recording.IsStreaming, "regular PTT default changed");
+        fixture.PushToTalk.RaiseReleased();
+        await UntilAsync(() => fixture.Recording.StopCount == 1);
+    }
+    var separate = new InteractionFixture();
+    using var separateCoordinator = separate.Create();
+    Assert(separateCoordinator.ConfigureAndStart(StreamingPushToTalkConfiguration()).IsSuccess, "configure failed");
+    separate.Shortcuts.Press(LinuxInteractionCoordinator.StreamingActionName);
+    await UntilAsync(() => separate.Recording.IsActive);
+    separate.PushToTalk.RaisePressed();
+    separate.PushToTalk.RaiseReleased();
+    Assert(separate.Recording.IsActive && separate.Recording.StopCount == 0, "PTT stopped another shortcut's stream");
+    await separateCoordinator.StopRecordingAsync();
+
+    separate.Recording.StartResult = PlatformResult.Failure("test.start_failed", "Expected failure");
+    separate.PushToTalk.RaisePressed();
+    await UntilAsync(() => separate.Recording.StartCount == 2);
+    await separateCoordinator.StopRecordingAsync();
+    separate.Recording.StartResult = PlatformResult.Success();
+    separate.PushToTalk.RaisePressed();
+    await UntilAsync(() => separate.Recording.IsActive);
+    separate.PushToTalk.RaiseReleased();
+    await UntilAsync(() => !separate.Recording.IsActive);
+}
+
+static async Task StreamingPushToTalkDefersConfiguration()
+{
+    var fixture = new InteractionFixture();
+    using var coordinator = fixture.Create();
+    Assert(coordinator.ConfigureAndStart(StreamingPushToTalkConfiguration()).IsSuccess, "configure failed");
+    fixture.PushToTalk.RaisePressed();
+    await UntilAsync(() => fixture.Recording.IsActive);
+    Assert(coordinator.ConfigureAndStart(StreamingPushToTalkConfiguration() with { PushToTalkUsesStreaming = false }).IsSuccess,
+        "configuration was not accepted");
+    Assert(fixture.PushToTalk.ConfigureCount == 1, "settings edit reset a held modifier");
+    fixture.PushToTalk.RaiseReleased();
+    await UntilAsync(() => fixture.PushToTalk.ConfigureCount == 2);
+    fixture.PushToTalk.RaisePressed();
+    await UntilAsync(() => fixture.Recording.IsActive);
+    Assert(!fixture.Recording.IsStreaming, "deferred preference did not take effect");
+    fixture.PushToTalk.RaiseReleased();
+}
+
 static Task ConflictingShortcutsAreRejected()
 {
     var fixture = new InteractionFixture();
@@ -1600,7 +1712,8 @@ sealed class FakePushToTalk : IPushToTalkMonitor
     public event EventHandler? Pressed;
     public event EventHandler? Released;
     public event EventHandler? Interfered;
-    public void Configure(PushToTalkConfiguration configuration) { }
+    public int ConfigureCount { get; private set; }
+    public void Configure(PushToTalkConfiguration configuration) => ConfigureCount++;
     public PlatformResult Start() => PlatformResult.Success();
     public void RaisePressed() => Pressed?.Invoke(this, EventArgs.Empty);
     public void RaiseReleased() => Released?.Invoke(this, EventArgs.Empty);
@@ -1646,12 +1759,30 @@ sealed class FakeRecording : IInteractionRecordingSession
     public InteractionStopOutcome StopOutcome { get; set; } = new(PlatformResult.Success());
     public bool ThrowOnStop { get; set; }
     public bool IsStreaming { get; private set; }
-    public ValueTask<PlatformResult> StartAsync(
+    public InteractionRecordingKind? StartedKind { get; private set; }
+    public TaskCompletionSource? StartGate { get; set; }
+    public TaskCompletionSource? StopGate { get; set; }
+    public int CancelledStarts { get; private set; }
+    public async ValueTask<PlatformResult> StartAsync(
         InteractionRecordingKind kind,
         CancellationToken cancellationToken = default)
-    { StartCount++; IsStreaming = kind == InteractionRecordingKind.Streaming; IsActive = StartResult.IsSuccess; return ValueTask.FromResult(StartResult); }
-    public ValueTask<InteractionStopOutcome> StopAsync(CancellationToken cancellationToken = default)
-    { StopCount++; IsActive = false; if (ThrowOnStop) throw new InvalidOperationException("expected"); return ValueTask.FromResult(StopOutcome); }
+    {
+        StartCount++;
+        try { if (StartGate is { } gate) await gate.Task.WaitAsync(cancellationToken); }
+        catch (OperationCanceledException) { CancelledStarts++; throw; }
+        StartedKind = kind;
+        IsStreaming = kind != InteractionRecordingKind.Batch;
+        IsActive = StartResult.IsSuccess;
+        return StartResult;
+    }
+    public async ValueTask<InteractionStopOutcome> StopAsync(CancellationToken cancellationToken = default)
+    {
+        StopCount++;
+        if (StopGate is { } gate) await gate.Task.WaitAsync(cancellationToken);
+        IsActive = false;
+        if (ThrowOnStop) throw new InvalidOperationException("expected");
+        return StopOutcome;
+    }
     public ValueTask CancelAsync(CancellationToken cancellationToken = default)
     { CancelCount++; IsActive = false; return ValueTask.CompletedTask; }
     public void SetActive(bool active) => IsActive = active;

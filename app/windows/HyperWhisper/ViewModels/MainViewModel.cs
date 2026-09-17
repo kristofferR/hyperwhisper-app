@@ -45,6 +45,11 @@ public partial class MainViewModel : ViewModelBase
     private readonly StorageService _storageService;
     private readonly KeyboardShortcutService _shortcutService;
     private readonly PushToTalkMonitor _pushToTalkMonitor;
+    private bool _pushToTalkStreamingOwned;
+    private bool _pushToTalkStreamingEnding;
+    private bool _pushToTalkStreamingCancelled;
+    private bool _pendingPushToTalkReconfigure;
+    private Task? _pushToTalkStreamingStart;
     private SmartPasteService? _pasteService;
     private StreamingAudioCapture? _streamingAudioCapture;
     private StreamingTranscriptionClient? _streamingClient;
@@ -332,6 +337,11 @@ public partial class MainViewModel : ViewModelBase
 
     private void RegisterShortcutsFromSettings()
     {
+        if (_pushToTalkStreamingOwned || _pushToTalkStreamingEnding)
+        {
+            _pendingPushToTalkReconfigure = true;
+            return;
+        }
         var shortcuts = new Dictionary<string, Models.KeyboardShortcut>
         {
             { "toggle", _settingsService.ToggleShortcut },
@@ -1180,7 +1190,7 @@ public partial class MainViewModel : ViewModelBase
                     ShowModeToastRequested?.Invoke(this, SelectedMode?.Name ?? "Default");
                 break;
             case "streaming":
-                if (!_settingsService.StreamingEnabled || _hotkeyBlocked || IsTranscribing)
+                if (!_settingsService.StreamingEnabled || _hotkeyBlocked || IsTranscribing || _pushToTalkStreamingEnding)
                     return;
 
                 if (_isStreamingStarting)
@@ -1207,6 +1217,39 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    private async Task EndPushToTalkStreamingAsync(bool cancelled)
+    {
+        _pushToTalkStreamingCancelled |= cancelled;
+        if (_pushToTalkStreamingEnding) return;
+        _pushToTalkStreamingEnding = true;
+        try
+        {
+            CancelStreamingStart();
+            if (_pushToTalkStreamingStart is { } start) await start;
+            if (_isStreamingSession)
+            {
+                if (_pushToTalkStreamingCancelled) await CancelRecordingAsync();
+                else await StopStreamingRecordingAsync();
+            }
+        }
+        finally
+        {
+            _pushToTalkStreamingEnding = false;
+            ResetPushToTalkStreaming();
+        }
+    }
+
+    private void ResetPushToTalkStreaming()
+    {
+        _pushToTalkStreamingOwned = false;
+        _pushToTalkMonitor.ResetToIdle();
+        if (!_pushToTalkStreamingEnding && _pendingPushToTalkReconfigure)
+        {
+            _pendingPushToTalkReconfigure = false;
+            RegisterShortcutsFromSettings();
+        }
+    }
+
     private void OnShortcutReleased(object? sender, KeyboardShortcutService.ShortcutEventArgs e)
     {
         if (e.Name == "toggle")
@@ -1222,7 +1265,7 @@ public partial class MainViewModel : ViewModelBase
         // device/OCR/audio failure becomes a logged error and the monitor returns to idle.
         try
         {
-            _transcriptionOrchestrator.PrewarmCloudConnectionIfActive(SelectedMode);
+            if (_pushToTalkStreamingOwned || _pushToTalkStreamingEnding) return;
             if (IsStreamingActive())
             {
                 _pushToTalkMonitor.ResetToIdle();
@@ -1230,6 +1273,26 @@ public partial class MainViewModel : ViewModelBase
             }
 
             if (_hotkeyBlocked || _toggleShortcutHeld) return;
+            if (!IsRecording && _settingsService.StreamingEnabled && _settingsService.PushToTalkUsesStreaming)
+            {
+                _pushToTalkStreamingOwned = true;
+                _pushToTalkStreamingCancelled = false;
+                try
+                {
+                    _pushToTalkStreamingStart = StartStreamingRecordingAsync();
+                    await _pushToTalkStreamingStart;
+                }
+                finally
+                {
+                    _pushToTalkStreamingStart = null;
+                    if (!_isStreamingSession)
+                    {
+                        ResetPushToTalkStreaming();
+                    }
+                }
+                return;
+            }
+            _transcriptionOrchestrator.PrewarmCloudConnectionIfActive(SelectedMode);
             if (!IsRecording)
             {
                 await StartRecordingAsync();
@@ -1259,7 +1322,12 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             if (_hotkeyBlocked || _toggleShortcutHeld) return;
-            if (_isStreamingStarting) return;
+            if (_pushToTalkStreamingOwned || _pushToTalkStreamingEnding)
+            {
+                await EndPushToTalkStreamingAsync(cancelled: false);
+                return;
+            }
+            if (IsStreamingActive()) return;
             if (IsRecording) await StopRecordingAndTranscribeAsync();
         }
         catch (Exception ex)
@@ -1276,7 +1344,12 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             if (_hotkeyBlocked || _toggleShortcutHeld) return;
-            if (_isStreamingStarting) return;
+            if (_pushToTalkStreamingOwned || _pushToTalkStreamingEnding)
+            {
+                await EndPushToTalkStreamingAsync(cancelled: true);
+                return;
+            }
+            if (IsStreamingActive()) return;
             if (IsRecording) await CancelRecordingAsync();
         }
         catch (Exception ex)
@@ -2355,6 +2428,7 @@ public partial class MainViewModel : ViewModelBase
 
     public async Task CleanupAsync()
     {
+        _pendingPushToTalkReconfigure = false;
         // Unsubscribe from all events to prevent memory leaks
         CancelActiveTranscription();
         _activeTranscriptionCts?.Dispose();

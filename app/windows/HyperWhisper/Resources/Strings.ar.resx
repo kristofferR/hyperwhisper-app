@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>حدث خطأ غير معروف</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>استخدام البث المباشر للضغط للتحدث</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>فعّل البث المباشر والضغط للتحدث. اختر مفتاح الضغط في الإعدادات ← الاختصارات.</value>
+  </data>
 </root>

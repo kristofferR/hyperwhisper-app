@@ -3077,7 +3077,7 @@ sealed class FakeInteractionRecordingSession : IInteractionRecordingSession
     public ValueTask<PlatformResult> StartAsync(
         InteractionRecordingKind kind,
         CancellationToken cancellationToken = default)
-    { cancellationToken.ThrowIfCancellationRequested(); StartCalls++; StartKinds.Add(kind); Streaming = kind == InteractionRecordingKind.Streaming; Active = StartResult.IsSuccess; return ValueTask.FromResult(StartResult); }
+    { cancellationToken.ThrowIfCancellationRequested(); StartCalls++; StartKinds.Add(kind); Streaming = kind != InteractionRecordingKind.Batch; Active = StartResult.IsSuccess; return ValueTask.FromResult(StartResult); }
     public ValueTask<InteractionStopOutcome> StopAsync(CancellationToken cancellationToken = default)
     { cancellationToken.ThrowIfCancellationRequested(); StopCalls++; Active = false; return ValueTask.FromResult(new InteractionStopOutcome(PlatformResult.Success())); }
     public ValueTask CancelAsync(CancellationToken cancellationToken = default)

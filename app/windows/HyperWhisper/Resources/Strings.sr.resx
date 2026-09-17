@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Дошло је до непознате грешке</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Користи транскрипцију уживо при држању тастера</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Укључите транскрипцију уживо и говор држањем тастера. Изаберите тастер у Поставкама → Пречице.</value>
+  </data>
 </root>

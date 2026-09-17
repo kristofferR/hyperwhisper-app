@@ -185,6 +185,14 @@
                                                TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Grid>
+                    <StackPanel Margin="0,14,0,0">
+                        <CheckBox x:Name="PushToTalkStreamingBox"
+                                  Content="{loc:Loc settings.shortcuts.pushToTalk.streaming.title}"
+                                  Click="PushToTalkStreaming_Click"/>
+                        <TextBlock Text="{loc:Loc settings.shortcuts.pushToTalk.streaming.subtitle}"
+                                   FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
                         </StackPanel>
                     </Border>
 

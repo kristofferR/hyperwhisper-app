@@ -185,6 +185,7 @@ public sealed partial class ApplicationBackupService
                 CopySetting<string>(linuxSettings, "pushToTalkShortcutModifiers");
                 CopySetting<string>(linuxSettings, "pushToTalkShortcutKey");
                 CopySetting<bool>(linuxSettings, "pushToTalkDoublePressLock");
+                CopySetting<bool>(linuxSettings, "pushToTalkUsesStreaming");
                 CopySetting<bool>(linuxSettings, "autoIncreaseMicVolume");
                 CopySetting<bool>(linuxSettings, "keepMicrophoneWarm");
                 CopySetting<string>(linuxSettings, "audioEnvironmentPolicy");

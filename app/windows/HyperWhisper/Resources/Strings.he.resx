@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>אירעה שגיאה לא ידועה</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>שימוש בסטרימינג במצב לחץ כדי לדבר</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>יש להפעיל סטרימינג ואת מצב לחץ כדי לדבר. בחרו את המקש שיש להחזיק בהגדרות ← קיצורי מקלדת.</value>
+  </data>
 </root>

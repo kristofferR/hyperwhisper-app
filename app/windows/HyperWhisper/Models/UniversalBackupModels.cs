@@ -493,6 +493,9 @@ public class WindowsSettingsExtensions
     [JsonPropertyName("streamingShortcut")]
     public string? StreamingShortcut { get; set; }
 
+    [JsonPropertyName("pushToTalkUsesStreaming")]
+    public bool? PushToTalkUsesStreaming { get; set; }
+
     [JsonPropertyName("streamingEnabled")]
     public bool? StreamingEnabled { get; set; }
 
