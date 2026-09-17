@@ -2775,4 +2775,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Сталася невідома помилка</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Потокова транскрипція під час утримання клавіші</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Увімкніть потокову транскрипцію та запис утриманням клавіші. Виберіть клавішу в Параметри → Клавіатурні ярлики.</value>
+  </data>
 </root>

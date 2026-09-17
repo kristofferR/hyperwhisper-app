@@ -1117,3 +1117,6 @@
 "settings.storage.maxRecordingDuration.hour" = "1時間";
 "settings.storage.maxRecordingDuration.hours" = "%d時間";
 "settings.storage.maxRecordingDuration.off" = "オフ";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "プッシュトゥトークでストリーミングを使用";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "ストリーミングとプッシュトゥトークを有効にしてください。長押しするキーは「設定」→「ショートカット」で選択できます。";

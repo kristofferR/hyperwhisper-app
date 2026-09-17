@@ -1116,3 +1116,6 @@ A törlés előtt frissítsd ezeket a módokat, hogy más modellt használjanak.
 "settings.storage.maxRecordingDuration.hour" = "1 óra";
 "settings.storage.maxRecordingDuration.hours" = "%d óra";
 "settings.storage.maxRecordingDuration.off" = "Kikapcsolva";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Streamelés használata a nyomva tartásos beszédhez";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Kapcsold be a streamelést és a nyomva tartásos beszédet. A billentyűt a Beállítások → Billentyűparancsok alatt választhatod ki.";

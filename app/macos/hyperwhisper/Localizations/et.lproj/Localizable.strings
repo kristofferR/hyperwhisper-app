@@ -1116,3 +1116,6 @@ Ennе kustutamist uuenda neid režiime teise mudeli kasutamiseks.";
 "settings.storage.maxRecordingDuration.hour" = "1 tund";
 "settings.storage.maxRecordingDuration.hours" = "%d tundi";
 "settings.storage.maxRecordingDuration.off" = "Väljas";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Kasuta voogedastust klahvi all hoides rääkimisel";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Luba voogedastus ja klahvi all hoides rääkimine. Vali klahv jaotises Seaded → Otseteed.";

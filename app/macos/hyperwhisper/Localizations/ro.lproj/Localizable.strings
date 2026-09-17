@@ -1116,3 +1116,6 @@ Actualizați aceste moduri pentru a utiliza un model diferit înainte de șterge
 "settings.storage.maxRecordingDuration.hour" = "1 oră";
 "settings.storage.maxRecordingDuration.hours" = "%d ore";
 "settings.storage.maxRecordingDuration.off" = "Dezactivat";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Folosiți streaming cu modul Push to Talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Activați streaming și modul Push to Talk. Alegeți tasta pe care o veți ține apăsată în Setări → Scurtături de tastatură.";

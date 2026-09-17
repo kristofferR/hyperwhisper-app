@@ -1116,3 +1116,6 @@ Perbarui mode-mode ini untuk menggunakan model yang berbeda sebelum menghapus.";
 "settings.storage.maxRecordingDuration.hour" = "1 jam";
 "settings.storage.maxRecordingDuration.hours" = "%d jam";
 "settings.storage.maxRecordingDuration.off" = "Nonaktif";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Gunakan streaming untuk tekan untuk bicara";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Aktifkan Streaming dan Tekan untuk Bicara. Pilih tombol yang ditahan di Pengaturan → Pintasan Keyboard.";

@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Wystąpił nieznany błąd</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Używaj strumieniowania w trybie Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Włącz strumieniowanie i tryb Push to Talk. Wybierz klawisz do przytrzymania w Ustawieniach → Skróty klawiszowe.</value>
+  </data>
 </root>

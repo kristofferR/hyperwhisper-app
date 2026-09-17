@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Προέκυψε ένα άγνωστο σφάλμα</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Χρήση ροής σε πραγματικό χρόνο με Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Ενεργοποιήστε τη ροή σε πραγματικό χρόνο και το Push to Talk. Επιλέξτε το πλήκτρο που θα κρατάτε πατημένο στις Ρυθμίσεις → Συντομεύσεις Πληκτρολογίου.</value>
+  </data>
 </root>

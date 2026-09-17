@@ -2776,4 +2776,10 @@ Vous pourrez le télécharger à nouveau plus tard.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Une erreur inconnue est survenue</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Utiliser le streaming avec le mode Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Activez le streaming et le mode Push to Talk. Choisissez la touche à maintenir dans Réglages → Raccourcis clavier.</value>
+  </data>
 </root>

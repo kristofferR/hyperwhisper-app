@@ -2796,4 +2796,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>An unknown error occurred</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Use streaming for push-to-talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Enable Streaming and Push to Talk. Choose the held key in Settings → Shortcuts.</value>
+  </data>
 </root>

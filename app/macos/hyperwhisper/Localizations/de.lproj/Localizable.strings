@@ -1116,3 +1116,6 @@ Aktualisiere diese Modi, um ein anderes Modell zu verwenden, bevor du es löschs
 "settings.storage.maxRecordingDuration.hour" = "1 Stunde";
 "settings.storage.maxRecordingDuration.hours" = "%d Stunden";
 "settings.storage.maxRecordingDuration.off" = "Aus";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Live-Übertragung für Push-to-Talk verwenden";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Aktivieren Sie Live-Übertragung und Push-to-Talk. Wählen Sie die zu haltende Taste unter Einstellungen → Tastaturkürzel.";

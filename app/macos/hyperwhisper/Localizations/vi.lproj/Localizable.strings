@@ -1116,3 +1116,6 @@ Cập nhật các chế độ này để sử dụng mô hình khác trước kh
 "settings.storage.maxRecordingDuration.hour" = "1 giờ";
 "settings.storage.maxRecordingDuration.hours" = "%d giờ";
 "settings.storage.maxRecordingDuration.off" = "Tắt";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Dùng truyền phát với chế độ Bấm để Nói";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Bật Truyền phát và Bấm để Nói. Chọn phím cần giữ trong Cài đặt → Phím tắt Bàn phím.";

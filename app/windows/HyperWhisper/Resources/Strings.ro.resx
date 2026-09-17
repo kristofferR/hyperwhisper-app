@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>A apărut o eroare necunoscută</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Folosiți streaming cu modul Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Activați streaming și modul Push to Talk. Alegeți tasta pe care o veți ține apăsată în Setări → Scurtături de tastatură.</value>
+  </data>
 </root>

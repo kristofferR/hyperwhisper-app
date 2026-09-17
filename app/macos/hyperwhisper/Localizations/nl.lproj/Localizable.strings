@@ -1116,3 +1116,6 @@ Wijzig deze modi zodat ze een ander model gebruiken voordat je verwijdert.";
 "settings.storage.maxRecordingDuration.hour" = "1 uur";
 "settings.storage.maxRecordingDuration.hours" = "%d uur";
 "settings.storage.maxRecordingDuration.off" = "Uit";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Streaming gebruiken voor push-to-talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Schakel Streaming en Push-to-talk in. Kies de toets die je ingedrukt houdt bij Instellingen → Sneltoetsen.";

@@ -1116,3 +1116,6 @@
 "settings.storage.maxRecordingDuration.hour" = "שעה אחת";
 "settings.storage.maxRecordingDuration.hours" = "%d שעות";
 "settings.storage.maxRecordingDuration.off" = "כבוי";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "שימוש בסטרימינג במצב לחץ כדי לדבר";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "יש להפעיל סטרימינג ואת מצב לחץ כדי לדבר. בחרו את המקש שיש להחזיק בהגדרות ← קיצורי מקלדת.";

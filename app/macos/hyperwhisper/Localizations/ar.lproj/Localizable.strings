@@ -1116,3 +1116,6 @@
 "settings.storage.maxRecordingDuration.hour" = "ساعة واحدة";
 "settings.storage.maxRecordingDuration.hours" = "%d ساعات";
 "settings.storage.maxRecordingDuration.off" = "إيقاف";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "استخدام البث المباشر للضغط للتحدث";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "فعّل البث المباشر والضغط للتحدث. اختر مفتاح الضغط في الإعدادات ← الاختصارات.";

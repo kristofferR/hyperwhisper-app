@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Došlo k neznámé chybě</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Používat streamování při podržení klávesy pro mluvení</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Zapněte streamování a mluvení podržením klávesy. Klávesu vyberte v Nastavení → Klávesové zkratky.</value>
+  </data>
 </root>

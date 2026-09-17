@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Ralat tidak diketahui berlaku</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Gunakan penstriman untuk tekan untuk bercakap</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Aktifkan Penstriman dan Tekan untuk Bercakap. Pilih kekunci yang ditahan dalam Tetapan → Pintasan Papan Kekunci.</value>
+  </data>
 </root>

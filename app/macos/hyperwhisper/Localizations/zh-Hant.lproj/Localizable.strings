@@ -1116,3 +1116,6 @@
 "settings.storage.maxRecordingDuration.hour" = "1 小時";
 "settings.storage.maxRecordingDuration.hours" = "%d 小時";
 "settings.storage.maxRecordingDuration.off" = "關閉";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "按住說話時使用即時串流";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "啟用即時串流和按住說話。在「設定 → 鍵盤快捷鍵」中選擇要按住的按鍵。";

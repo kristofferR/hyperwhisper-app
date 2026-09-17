@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Įvyko nežinoma klaida</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Naudoti srautinį transkribavimą kalbant laikant klavišą</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Įjunkite srautinį transkribavimą ir kalbėjimą laikant klavišą. Klavišą pasirinkite Nustatymai → Klaviatūros nuorodos.</value>
+  </data>
 </root>

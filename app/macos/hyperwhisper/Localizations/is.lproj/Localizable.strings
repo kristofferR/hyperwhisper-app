@@ -1116,3 +1116,6 @@ Upperfærðu þessar stillingar til að nota annað líkan áður en þú eyðir
 "settings.storage.maxRecordingDuration.hour" = "1 klukkustund";
 "settings.storage.maxRecordingDuration.hours" = "%d klukkustundir";
 "settings.storage.maxRecordingDuration.off" = "Slökkt";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Nota streymi með því að halda takka inni";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Kveiktu á streymi og Ýta til að tala. Veldu takka í Stillingar → Lyklaborðsflýtileiðir og haltu honum inni til að tala.";

@@ -1116,3 +1116,6 @@
 "settings.storage.maxRecordingDuration.hour" = "1 ชั่วโมง";
 "settings.storage.maxRecordingDuration.hours" = "%d ชั่วโมง";
 "settings.storage.maxRecordingDuration.off" = "ปิด";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "ใช้การสตรีมกับการกดเพื่อพูด";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "เปิดการสตรีมและการกดเพื่อพูด เลือกปุ่มที่ต้องกดค้างในการตั้งค่า → ปุ่มลัด";

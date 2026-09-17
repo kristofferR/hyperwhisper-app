@@ -1116,3 +1116,6 @@ Pred brisanjem posodobite te načine delovanja, da bodo uporabljali drug model."
 "settings.storage.maxRecordingDuration.hour" = "1 ura";
 "settings.storage.maxRecordingDuration.hours" = "%d ur";
 "settings.storage.maxRecordingDuration.off" = "Izklopljeno";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Uporabi pretočni prepis ob držanju tipke za govor";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Vklopite pretočni prepis in govor ob držanju tipke. Tipko izberite v Nastavitvah → Bližnjice.";

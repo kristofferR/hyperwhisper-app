@@ -1116,3 +1116,6 @@ Pred odstránením aktualizujte tieto režimy, aby používali iný model.";
 "settings.storage.maxRecordingDuration.hour" = "1 hodina";
 "settings.storage.maxRecordingDuration.hours" = "%d hodín";
 "settings.storage.maxRecordingDuration.off" = "Vypnuté";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Používať streamovanie pri podržaní klávesu na rozprávanie";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Zapnite streamovanie a rozprávanie podržaním klávesu. Kláves vyberte v Nastaveniach → Skratky.";
