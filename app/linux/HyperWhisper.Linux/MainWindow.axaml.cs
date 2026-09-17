@@ -38,6 +38,8 @@ using HyperWhisper.Linux.Platform.Audio;
 using HyperWhisper.Linux.Platform.Injection;
 using HyperWhisper.Linux.Platform.Input;
 using HyperWhisper.PortableApplication.Audio;
+using HyperWhisper.LiveStreaming;
+using HyperWhisper.SharedCore;
 
 namespace HyperWhisper.Linux;
 
@@ -3167,12 +3169,15 @@ public partial class MainWindow : Window
             if (FindNamed<TextBlock>("StreamingProviderStatusText") is { } status)
                 status.Text = ProviderStatusSentence(settings.StreamingProvider);
 
-            // Vocabulary boosting is dropped while the language is auto-detected, which is the
-            // one warning the Linux head can answer without a provider session.
             var autoLanguage = string.Equals(settings.StreamingLanguage, "auto", StringComparison.OrdinalIgnoreCase);
             var hasVocabulary = _viewModel.Vocabulary.Items.Count > 0;
+            var vocabularyRequiresLanguage = LiveStreamingModeRouter.TryProvider(
+                settings.StreamingProvider, out var provider, out _, out _)
+                && provider is not (LiveTranscriptionProvider.ParakeetLocal or LiveTranscriptionProvider.NemotronLocal)
+                && SharedCoreBridge.LiveSupportsVocabulary(provider)
+                && !SharedCoreBridge.LiveSupportsVocabularyWithoutLanguage(provider, settings.StreamingCloudTier);
             if (FindNamed<Border>("StreamingVocabularyWarningPanel") is { } warning)
-                warning.IsVisible = hasVocabulary && autoLanguage;
+                warning.IsVisible = hasVocabulary && autoLanguage && vocabularyRequiresLanguage;
             if (FindNamed<TextBlock>("StreamingVocabularyWarningText") is { } warningText)
                 warningText.Text = L("settings.streaming.warning.vocabularyAutoDetect");
 

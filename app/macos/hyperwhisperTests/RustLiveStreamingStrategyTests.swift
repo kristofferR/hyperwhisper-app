@@ -708,8 +708,8 @@ struct RustLiveStreamingStrategyTests {
         }
         #expect(partial == "Hyper whisper")
         let steps = strategy.stopSequence()
-        #expect(steps.count == 3)
-        guard case let .sendText(stop) = steps[0],
+        guard steps.count == 3,
+              case let .sendText(stop) = steps[0],
               case .waitForSessionComplete = steps[1],
               case .closeWebSocket = steps[2] else {
             Issue.record("Soniox must send an empty frame and wait for completion")
