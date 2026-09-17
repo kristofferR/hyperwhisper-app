@@ -1117,5 +1117,5 @@
 "settings.storage.maxRecordingDuration.hours" = "%d시간";
 "settings.storage.maxRecordingDuration.off" = "끄기";
 
-"settings.shortcuts.pushToTalk.streaming.title" = "누름 말하기에 스트리밍 사용";
-"settings.shortcuts.pushToTalk.streaming.subtitle" = "스트리밍과 누름 말하기를 켜세요. 설정 → 키보드 단축키에서 길게 누를 키를 선택하세요.";
+"settings.shortcuts.pushToTalk.streaming.title" = "눌러서 말하기에 스트리밍 사용";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "스트리밍과 눌러서 말하기를 켜세요. 설정 → 키보드 단축키에서 길게 누를 키를 선택하세요.";

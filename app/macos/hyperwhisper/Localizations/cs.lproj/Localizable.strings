@@ -1118,4 +1118,4 @@ Před smazáním aktualizujte tyto režimy, aby používaly jiný model.";
 "settings.storage.maxRecordingDuration.off" = "Vypnuto";
 
 "settings.shortcuts.pushToTalk.streaming.title" = "Používat streamování při podržení klávesy pro mluvení";
-"settings.shortcuts.pushToTalk.streaming.subtitle" = "Zapněte streamování a mluvení podržením klávesy. Klávesu vyberte v Nastavení → Zkratky.";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Zapněte streamování a mluvení podržením klávesy. Klávesu vyberte v Nastavení → Klávesové zkratky.";

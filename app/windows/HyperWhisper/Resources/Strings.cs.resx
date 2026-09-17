@@ -2780,6 +2780,6 @@ You can re-download it later.</value>
     <value>Používat streamování při podržení klávesy pro mluvení</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
-    <value>Zapněte streamování a mluvení podržením klávesy. Klávesu vyberte v Nastavení → Zkratky.</value>
+    <value>Zapněte streamování a mluvení podržením klávesy. Klávesu vyberte v Nastavení → Klávesové zkratky.</value>
   </data>
 </root>

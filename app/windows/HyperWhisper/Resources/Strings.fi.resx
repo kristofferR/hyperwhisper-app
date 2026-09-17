@@ -2780,6 +2780,6 @@ You can re-download it later.</value>
     <value>Käytä suoratoistoa paina ja puhu -toiminnossa</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
-    <value>Ota suoratoisto ja paina ja puhu käyttöön. Valitse painettava näppäin kohdassa Asetukset → Pikanäppäimet.</value>
+    <value>Ota suoratoisto ja paina ja puhu käyttöön. Valitse näppäin, jota pidät painettuna kohdassa Asetukset → Pikanäppäimet.</value>
   </data>
 </root>

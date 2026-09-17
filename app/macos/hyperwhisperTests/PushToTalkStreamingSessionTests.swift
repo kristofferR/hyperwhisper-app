@@ -100,6 +100,27 @@ struct PushToTalkStreamingSessionTests {
         #expect(restored.pushToTalkUsesStreaming == true)
     }
 
+    @Test func unrelatedIdleCannotCancelAStartingOrActiveStream() async {
+        let session = PushToTalkStreamingSession()
+        var connected = false
+        var ended = false
+        let start = Task<Void, Never> { await eventually { connected } }
+        session.begin(startTask: start, isRecording: { true }, stop: { _ in }, onEnd: { ended = true })
+        session.recordingBecameIdle(isStreamingActive: false)
+        #expect(!start.isCancelled)
+        #expect(session.isActive)
+        connected = true
+        await start.value
+        session.recordingBecameIdle(isStreamingActive: true)
+        #expect(!start.isCancelled)
+        #expect(session.isActive)
+        await eventually {
+            session.recordingBecameIdle(isStreamingActive: false)
+            return ended
+        }
+        #expect(!session.isActive)
+    }
+
     @Test func streamedKeyboardEventsCannotCancelTheHeldModifier() throws {
         let source = try #require(CGEventSource(stateID: .privateState))
         let event = try #require(CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true))

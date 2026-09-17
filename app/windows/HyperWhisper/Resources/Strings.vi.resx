@@ -2776,9 +2776,9 @@ You can re-download it later.</value>
     <value>Đã xảy ra lỗi không xác định</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
-    <value>Dùng luồng phát với chế độ Bấm để Nói</value>
+    <value>Dùng truyền phát với chế độ Bấm để Nói</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
-    <value>Bật Luồng phát và Bấm để Nói. Chọn phím cần giữ trong Cài đặt → Phím tắt Bàn phím.</value>
+    <value>Bật Truyền phát và Bấm để Nói. Chọn phím cần giữ trong Cài đặt → Phím tắt Bàn phím.</value>
   </data>
 </root>

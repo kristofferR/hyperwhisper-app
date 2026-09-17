@@ -2780,6 +2780,6 @@ You can re-download it later.</value>
     <value>Brug streaming med tryk for at tale</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
-    <value>Slå Streaming og Tryk for at tale til. Vælg tasten i Indstillinger → Genveje.</value>
+    <value>Slå Streaming og Tryk for at tale til. Vælg tasten i Indstillinger → Tastaturgenveje.</value>
   </data>
 </root>

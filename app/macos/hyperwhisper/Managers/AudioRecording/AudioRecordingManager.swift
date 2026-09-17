@@ -339,7 +339,9 @@ class AudioRecordingManager: NSObject, ObservableObject {
                 guard let self, state == .idle else { return }
                 // Includes errors, Escape, and the streaming duration limit.
                 if self.streamingPushToTalkSession.isActive {
-                    self.streamingPushToTalkSession.end(cancelled: true)
+                    self.streamingPushToTalkSession.recordingBecameIdle(
+                        isStreamingActive: self.recordingTranscriptionFlow.isStreamingActive
+                    )
                 } else if self.needsPushToTalkReconfigure {
                     self.needsPushToTalkReconfigure = false
                     self.setupPushToTalk()

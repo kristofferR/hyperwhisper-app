@@ -1118,4 +1118,4 @@
 "settings.storage.maxRecordingDuration.off" = "Выключено";
 
 "settings.shortcuts.pushToTalk.streaming.title" = "Потоковая передача в режиме «Нажать для разговора»";
-"settings.shortcuts.pushToTalk.streaming.subtitle" = "Включите потоковую передачу и режим «Нажать для разговора». Выберите удерживаемую клавишу в Параметры → Сочетания клавиш.";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Включите потоковую передачу и режим «Нажать для разговора». Выберите удерживаемую клавишу в Параметрах → Сочетания клавиш.";

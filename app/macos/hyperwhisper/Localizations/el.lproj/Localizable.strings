@@ -1117,5 +1117,5 @@
 "settings.storage.maxRecordingDuration.hours" = "%d ώρες";
 "settings.storage.maxRecordingDuration.off" = "Απενεργοποιημένο";
 
-"settings.shortcuts.pushToTalk.streaming.title" = "Χρήση ροής με Push to Talk";
-"settings.shortcuts.pushToTalk.streaming.subtitle" = "Ενεργοποιήστε τη ροή και το Push to Talk. Επιλέξτε το πλήκτρο που θα κρατάτε πατημένο στις Ρυθμίσεις → Συντομεύσεις Πληκτρολογίου.";
+"settings.shortcuts.pushToTalk.streaming.title" = "Χρήση ροής σε πραγματικό χρόνο με Push to Talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Ενεργοποιήστε τη ροή σε πραγματικό χρόνο και το Push to Talk. Επιλέξτε το πλήκτρο που θα κρατάτε πατημένο στις Ρυθμίσεις → Συντομεύσεις Πληκτρολογίου.";

@@ -9,6 +9,7 @@ final class PushToTalkStreamingSession {
     private var stop: ((Bool) async -> Void)?
     private var onEnd: (() -> Void)?
     private var sessionID: UUID?
+    private var isStarting = false
 
     var isActive: Bool { startTask != nil }
 
@@ -25,11 +26,20 @@ final class PushToTalkStreamingSession {
         self.stop = stop
         self.onEnd = onEnd
         cancelRequested = false
+        isStarting = true
         Task {
             await startTask.value
             guard sessionID == id else { return }
+            isStarting = false
             if !isRecording() { end(cancelled: true) }
         }
+    }
+
+    func recordingBecameIdle(isStreamingActive: Bool) {
+        // Global idle events can come from an older batch or file transcription.
+        // Startup completion handles its own failure; only end an established,
+        // owned stream once the streaming flow has actually stopped.
+        if !isStarting && !isStreamingActive { end(cancelled: true) }
     }
 
     func end(cancelled: Bool) {

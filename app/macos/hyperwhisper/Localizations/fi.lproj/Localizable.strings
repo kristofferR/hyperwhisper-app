@@ -1118,4 +1118,4 @@ Päivitä nämä tilat käyttämään eri mallia ennen poistamista.";
 "settings.storage.maxRecordingDuration.off" = "Pois päältä";
 
 "settings.shortcuts.pushToTalk.streaming.title" = "Käytä suoratoistoa paina ja puhu -toiminnossa";
-"settings.shortcuts.pushToTalk.streaming.subtitle" = "Ota suoratoisto ja paina ja puhu käyttöön. Valitse painettava näppäin kohdassa Asetukset → Pikanäppäimet.";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Ota suoratoisto ja paina ja puhu käyttöön. Valitse näppäin, jota pidät painettuna kohdassa Asetukset → Pikanäppäimet.";

@@ -2777,9 +2777,9 @@ You can re-download it later.</value>
     <value>Wystąpił nieznany błąd</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
-    <value>Używaj transmisji w trybie Push to Talk</value>
+    <value>Używaj strumieniowania w trybie Push to Talk</value>
   </data>
   <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
-    <value>Włącz transmisję i tryb Push to Talk. Wybierz klawisz do przytrzymania w Ustawienia → Skróty klawiszowe.</value>
+    <value>Włącz strumieniowanie i tryb Push to Talk. Wybierz klawisz do przytrzymania w Ustawieniach → Skróty klawiszowe.</value>
   </data>
 </root>

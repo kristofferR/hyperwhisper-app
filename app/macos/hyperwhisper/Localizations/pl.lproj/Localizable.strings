@@ -1117,5 +1117,5 @@ Przed usunięciem zaktualizuj te tryby, aby korzystały z innego modelu.";
 "settings.storage.maxRecordingDuration.hours" = "%d godzin";
 "settings.storage.maxRecordingDuration.off" = "Wyłączone";
 
-"settings.shortcuts.pushToTalk.streaming.title" = "Używaj transmisji w trybie Push to Talk";
-"settings.shortcuts.pushToTalk.streaming.subtitle" = "Włącz transmisję i tryb Push to Talk. Wybierz klawisz do przytrzymania w Ustawienia → Skróty klawiszowe.";
+"settings.shortcuts.pushToTalk.streaming.title" = "Używaj strumieniowania w trybie Push to Talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Włącz strumieniowanie i tryb Push to Talk. Wybierz klawisz do przytrzymania w Ustawieniach → Skróty klawiszowe.";

@@ -417,7 +417,8 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        if (!IsActiveStreamingGeneration(generation))
+        // Ctrl+V must wait until the held PTT modifier is released.
+        if (_pushToTalkStreamingOwned || !IsActiveStreamingGeneration(generation))
             return;
 
         if (!SettingsService.Instance.AutoPasteEnabled)
