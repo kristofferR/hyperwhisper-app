@@ -3,7 +3,7 @@ title: Streaming Transcription
 description: Configure the real-time streaming mode in HyperWhisper — provider, language, keyboard shortcut, and Deepgram options.
 ---
 
-Streaming transcription converts your speech to text in real time, word by word. It is separate from the mode-based recording system. You start it with its own keyboard shortcut. It uses its own provider and language settings.
+Streaming transcription converts your speech to text in real time, word by word. It is separate from the mode-based recording system. You start it with its own keyboard shortcut, or with push-to-talk on macOS. It uses its own provider and language settings.
 
 ## Turn On Streaming
 
@@ -34,6 +34,8 @@ After you turn on streaming, set the shortcut that starts it.
 <Tabs>
   <Tab title="macOS">
     The default shortcut is **⌥ ⇧ Space** (Option + Shift + Space). To change it, click the shortcut field in the **Streaming** sidebar section. Then press the new key combination. Press the shortcut to start streaming. Press it again to stop streaming.
+
+    For hold-to-talk on macOS, enable **Push to Talk** in **Settings → Shortcuts**, select **Right Option** (or another trigger), and turn on **Use streaming for push-to-talk**. This toggle is also available in **Streaming**. Hold the selected key to stream with your streaming provider, then release it to finish. The dedicated streaming shortcut keeps its start/stop behavior. If you turn Streaming off, push-to-talk returns to regular recording.
 
     If the shortcut conflicts with another HyperWhisper shortcut, a warning appears. HyperWhisper does not save the new shortcut until you remove the conflict.
   </Tab>

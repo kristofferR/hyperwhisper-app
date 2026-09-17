@@ -1116,3 +1116,6 @@ Actualitza aquests modes per utilitzar un model diferent abans d'eliminar-lo.";
 "settings.storage.maxRecordingDuration.hour" = "1 hora";
 "settings.storage.maxRecordingDuration.hours" = "%d hores";
 "settings.storage.maxRecordingDuration.off" = "Desactivat";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Utilitza la transmissió en temps real amb el mode Prémer per parlar";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Activa la transmissió en temps real i el mode Prémer per parlar. Tria la tecla que mantindràs premuda a Configuració → Dreceres de teclat.";

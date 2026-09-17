@@ -1116,3 +1116,6 @@ Před smazáním aktualizujte tyto režimy, aby používaly jiný model.";
 "settings.storage.maxRecordingDuration.hour" = "1 hodina";
 "settings.storage.maxRecordingDuration.hours" = "%d hodin";
 "settings.storage.maxRecordingDuration.off" = "Vypnuto";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Používat streamování při podržení klávesy pro mluvení";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Zapněte streamování a mluvení podržením klávesy. Klávesu vyberte v Nastavení → Zkratky.";

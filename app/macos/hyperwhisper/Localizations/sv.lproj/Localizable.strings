@@ -1116,3 +1116,6 @@ Uppdatera dessa lägen för att använda en annan modell innan du raderar.";
 "settings.storage.maxRecordingDuration.hour" = "1 timme";
 "settings.storage.maxRecordingDuration.hours" = "%d timmar";
 "settings.storage.maxRecordingDuration.off" = "Av";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Använd strömning med tryck för att prata";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Aktivera Strömning och Tryck för att prata. Välj tangenten under Inställningar → Kortkommandon.";

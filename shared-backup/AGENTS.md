@@ -124,6 +124,7 @@ category-keyed extension above) and round-trip losslessly through the universal 
 |---|---|---|
 | `pushToTalkMode` | `SettingsManager.pushToTalkMode` (raw value) | — |
 | `pushToTalkDoublePressEnabled` | `SettingsManager.pushToTalkDoublePressEnabled` | — |
+| `pushToTalkUsesStreaming` | `SettingsManager.pushToTalkUsesStreaming` | — |
 | `quickCaptureEnabled` | `SettingsManager.quickCaptureEnabled` | — |
 | `quickCaptureModeId` | `SettingsManager.quickCaptureModeId` (UUID string, `""` = current mode) | — |
 

@@ -1116,3 +1116,6 @@ Atualize esses modos para usar um modelo diferente antes de excluir.";
 "settings.storage.maxRecordingDuration.hour" = "1 hora";
 "settings.storage.maxRecordingDuration.hours" = "%d horas";
 "settings.storage.maxRecordingDuration.off" = "Desativado";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Usar streaming com o modo Push to Talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Ative o streaming e o modo Push to Talk. Escolha a tecla a manter premida em Definições → Atalhos de Teclado.";

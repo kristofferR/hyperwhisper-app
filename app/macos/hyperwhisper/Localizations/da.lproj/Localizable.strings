@@ -1116,3 +1116,6 @@ Opdater disse tilstande til at bruge en anden model, inden du sletter.";
 "settings.storage.maxRecordingDuration.hour" = "1 time";
 "settings.storage.maxRecordingDuration.hours" = "%d timer";
 "settings.storage.maxRecordingDuration.off" = "Fra";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Brug streaming med tryk for at tale";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Slå Streaming og Tryk for at tale til. Vælg tasten i Indstillinger → Genveje.";

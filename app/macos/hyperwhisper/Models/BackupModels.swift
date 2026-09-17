@@ -446,6 +446,7 @@ struct BackupTextOutputSettings: Codable {
 struct BackupShortcutSettings: Codable {
     let pushToTalkMode: String
     let pushToTalkDoublePressEnabled: Bool
+    var pushToTalkUsesStreaming: Bool? = nil
     let quickCaptureEnabled: Bool?
     let quickCaptureModeId: String?
 }

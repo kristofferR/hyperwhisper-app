@@ -1116,3 +1116,6 @@
 "settings.storage.maxRecordingDuration.hour" = "1 година";
 "settings.storage.maxRecordingDuration.hours" = "%d годин";
 "settings.storage.maxRecordingDuration.off" = "Вимкнено";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Потокова транскрипція під час утримання клавіші";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Увімкніть потокову транскрипцію та запис утриманням клавіші. Виберіть клавішу в Параметри → Клавіатурні ярлики.";

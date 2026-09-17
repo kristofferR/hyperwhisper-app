@@ -1116,3 +1116,6 @@ Aggiorna queste modalità per usare un modello diverso prima di eliminarlo.";
 "settings.storage.maxRecordingDuration.hour" = "1 ora";
 "settings.storage.maxRecordingDuration.hours" = "%d ore";
 "settings.storage.maxRecordingDuration.off" = "Disattivato";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Usa lo streaming con la modalità Push to Talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Attiva lo streaming e la modalità Push to Talk. Scegli il tasto da tenere premuto in Impostazioni → Scorciatoie da Tastiera.";
