@@ -69,6 +69,9 @@ internal sealed class EvdevShortcutFilter
                 var matches = (!binding.Primary.HasValue || state.Down.Contains(binding.Primary.Value))
                     && binding.ModifierGroups.Values.All(group => group.Any(state.Down.Contains));
                 var active = state.Active.Contains(binding.NamedShortcut.Name);
+                if (active && binding.NamedShortcut.ReleaseAfterAllKeysUp)
+                    matches = (binding.Primary is { } primary && state.Down.Contains(primary))
+                        || binding.ModifierGroups.Values.Any(group => group.Any(state.Down.Contains));
                 if (matches && !active)
                 {
                     state.Active.Add(binding.NamedShortcut.Name);

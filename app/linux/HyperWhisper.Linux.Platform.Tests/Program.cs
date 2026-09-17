@@ -31,6 +31,8 @@ var tests = new (string Name, Func<Task> Run)[]
     ("global shortcut capability probe is content-free and closes sources", ShortcutCapabilityProbe),
     ("X11 mapper preserves logical shortcut privacy", X11ShortcutPrivacy),
     ("X11 modifier-only shortcuts emit press and release", X11ModifierShortcut),
+    ("held custom chords release only after every key is up", CustomChordRelease),
+    ("X11 held chords wait for modifiers after primary release", X11CustomChordRelease),
     ("X11 maps multi-modifier-only shortcuts in either order", X11MultiModifierShortcut),
     ("true Xorg selects XGrabKey instead of evdev", XorgSelectsXGrabKey),
     ("X11 XGrabKey host integration", X11GrabIntegration),
@@ -440,6 +442,37 @@ static Task X11MultiModifierShortcut()
     Assert.True(mapped.Value.Triggers.Count(trigger => trigger.Modifiers == 4) == 2);
     Assert.True(mapped.Value.Triggers.Count(trigger => trigger.Modifiers == 8) == 2);
     return Task.CompletedTask;
+}
+
+static Task CustomChordRelease()
+{
+    foreach (var order in new ushort[][] { [57, 29], [29, 57] })
+    {
+        var binding = EvdevShortcutMapper.Map(new NamedShortcut("ptt",
+            new(ShortcutModifiers.Control, new("Space")), ReleaseAfterAllKeysUp: true)).Value!;
+        var filter = new EvdevShortcutFilter();
+        filter.ReplaceBindings([binding]);
+        _ = filter.Process("keyboard", new(EvdevEvent.KeyType, 29, 1));
+        Assert.True(filter.Process("keyboard", new(EvdevEvent.KeyType, 57, 1)).Signals.Single().Pressed);
+        Assert.Equal(0, filter.Process("keyboard", new(EvdevEvent.KeyType, order[0], 0)).Signals.Count);
+        Assert.True(!filter.Process("keyboard", new(EvdevEvent.KeyType, order[1], 0)).Signals.Single().Pressed);
+    }
+    return Task.CompletedTask;
+}
+
+static async Task X11CustomChordRelease()
+{
+    var connection = new FakeX11Connection(new(65, 4, true), new(65, 4, false)) { HeldKeysym = 0xffe3 };
+    using var service = new X11GlobalShortcutService(new FakeX11Factory(connection));
+    var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    service.ShortcutReleased += (_, _) => released.TrySetResult();
+    service.RegisterShortcuts([new NamedShortcut("ptt", new(ShortcutModifiers.Control, new("Space")),
+        ReleaseAfterAllKeysUp: true)]);
+    Assert.Success(service.Start());
+    await connection.KeyStateQueried.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Assert.True(!released.Task.IsCompleted);
+    connection.HeldKeysym = 0;
+    await released.Task.WaitAsync(TimeSpan.FromSeconds(2));
 }
 
 static Task XorgSelectsXGrabKey()
@@ -2685,6 +2718,14 @@ sealed class FakeX11Factory(FakeX11Connection connection) : IX11HotkeyConnection
 
 sealed class FakeX11Connection(params X11HotkeyEvent[] events) : IX11HotkeyConnection
 {
+    public volatile uint HeldKeysym;
+    public TaskCompletionSource KeyStateQueried { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public bool AreAnyKeysDown(IEnumerable<uint> keysyms)
+    {
+        var held = keysyms.Contains(HeldKeysym);
+        KeyStateQueried.TrySetResult();
+        return held;
+    }
     private readonly Queue<X11HotkeyEvent> _events = new(events);
     public List<(byte Keycode, uint Modifiers)> Grabs { get; } = [];
     public byte? FailNextGrabForKeycode { get; set; }

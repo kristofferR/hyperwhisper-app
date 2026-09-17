@@ -310,7 +310,12 @@ public sealed class PushToTalkMonitor : IDisposable, PlatformContracts.IPushToTa
     {
         TracePttEvent("keyUp", vkCode);
 
-        if (!IsPrimaryKey(vkCode)) return;
+        if (_settings.Mode == PushToTalkMode.Custom)
+        {
+            // A custom chord is held until both its key and modifiers are up.
+            if (!IsKeyPartOfShortcut(vkCode) || _pressedKeys.Any(IsKeyPartOfShortcut)) return;
+        }
+        else if (!IsPrimaryKey(vkCode)) return;
 
         // For logical modifiers backed by multiple physical keys (e.g. "ctrl" = LCtrl + RCtrl),
         // only transition when the shortcut is no longer satisfied (both keys released).
@@ -610,30 +615,11 @@ public sealed class PushToTalkMonitor : IDisposable, PlatformContracts.IPushToTa
         if (_settings.Mode == PushToTalkMode.Custom && _settings.CustomShortcut != null)
         {
             var shortcut = _settings.CustomShortcut;
-            var hasAnyKey = shortcut.Control || shortcut.Alt || shortcut.Shift || shortcut.Win || shortcut.Key.HasValue;
-
-            if (!hasAnyKey)
-                return false;
-
-            if (shortcut.Control && (GetAsyncKeyState(VK_LCONTROL) & down) == 0 && (GetAsyncKeyState(VK_RCONTROL) & down) == 0)
-                return false;
-
-            if (shortcut.Alt && (GetAsyncKeyState(VK_LMENU) & down) == 0 && (GetAsyncKeyState(VK_RMENU) & down) == 0)
-                return false;
-
-            if (shortcut.Shift && (GetAsyncKeyState(VK_LSHIFT) & down) == 0 && (GetAsyncKeyState(VK_RSHIFT) & down) == 0)
-                return false;
-
-            if (shortcut.Win && (GetAsyncKeyState(VK_LWIN) & down) == 0 && (GetAsyncKeyState(VK_RWIN) & down) == 0)
-                return false;
-
-            if (shortcut.Key.HasValue)
-            {
-                int vk = KeyInterop.VirtualKeyFromKey(shortcut.Key.Value);
-                return (GetAsyncKeyState(vk) & down) != 0;
-            }
-
-            return true;
+            return (shortcut.Control && ((GetAsyncKeyState(VK_LCONTROL) | GetAsyncKeyState(VK_RCONTROL)) & down) != 0)
+                || (shortcut.Alt && ((GetAsyncKeyState(VK_LMENU) | GetAsyncKeyState(VK_RMENU)) & down) != 0)
+                || (shortcut.Shift && ((GetAsyncKeyState(VK_LSHIFT) | GetAsyncKeyState(VK_RSHIFT)) & down) != 0)
+                || (shortcut.Win && ((GetAsyncKeyState(VK_LWIN) | GetAsyncKeyState(VK_RWIN)) & down) != 0)
+                || (shortcut.Key.HasValue && (GetAsyncKeyState(KeyInterop.VirtualKeyFromKey(shortcut.Key.Value)) & down) != 0);
         }
 
         return false;

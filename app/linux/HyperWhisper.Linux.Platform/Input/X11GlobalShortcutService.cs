@@ -16,6 +16,7 @@ internal interface IX11HotkeyConnection : IDisposable
     bool Grab(byte keycode, uint modifiers);
     void UngrabAll();
     bool TryRead(out X11HotkeyEvent value);
+    bool AreAnyKeysDown(IEnumerable<uint> keysyms);
 }
 
 internal interface IX11HotkeyConnectionFactory
@@ -145,6 +146,7 @@ internal sealed class X11GlobalShortcutService : IGlobalShortcutService
         while (!token.IsCancellationRequested)
         {
             while (_connection is not null && _connection.TryRead(out var input)) Process(input);
+            ReleaseCompletedChords();
             try { await Task.Delay(10, token).ConfigureAwait(false); }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }
         }
@@ -164,12 +166,32 @@ internal sealed class X11GlobalShortcutService : IGlobalShortcutService
                     state &= ~binding.Triggers.First(trigger =>
                         _connection!.Keycode(trigger.Keysym) == input.Keycode).PrimaryModifier;
                 if (state != candidate.Modifiers) continue;
+                if (!input.Pressed && binding.Shortcut.ReleaseAfterAllKeysUp) continue;
                 var changed = input.Pressed ? _active.Add(binding.Shortcut.Name) : _active.Remove(binding.Shortcut.Name);
                 if (changed) signals.Add((input.Pressed, binding.Shortcut));
             }
         }
         foreach (var signal in signals)
             Raise(signal.Pressed ? ShortcutPressed : ShortcutReleased, signal.Shortcut);
+    }
+
+    private void ReleaseCompletedChords()
+    {
+        var released = new List<NamedShortcut>();
+        lock (_gate)
+        {
+            if (_connection is null) return;
+            foreach (var binding in _bindings)
+            {
+                if (!binding.Shortcut.ReleaseAfterAllKeysUp || !_active.Contains(binding.Shortcut.Name)) continue;
+                // XGrabKey stops delivering events once the primary key is up.
+                // Query only this configured chord to observe its remaining modifiers.
+                if (_connection.AreAnyKeysDown(X11ShortcutMapper.ChordKeys(binding.Shortcut.Shortcut))) continue;
+                _active.Remove(binding.Shortcut.Name);
+                released.Add(binding.Shortcut);
+            }
+        }
+        foreach (var shortcut in released) Raise(ShortcutReleased, shortcut);
     }
 
     private void Raise(EventHandler<ShortcutTriggeredEventArgs>? handlers, NamedShortcut shortcut)
@@ -198,6 +220,9 @@ internal sealed class X11GlobalShortcutService : IGlobalShortcutService
 internal static class X11ShortcutMapper
 {
     private const uint Shift = 1, Control = 4, Alt = 8, Meta = 64;
+    internal static IEnumerable<uint> ChordKeys(GlobalShortcut shortcut) =>
+        ModifierTriggers(shortcut.Modifiers).Select(trigger => trigger.Keysym)
+            .Concat(shortcut.Key.IsNone ? [] : MapKey(shortcut.Key));
     public static PlatformResult<X11ShortcutBinding> Map(NamedShortcut named)
     {
         if (string.IsNullOrWhiteSpace(named.Name) || named.Shortcut.IsEmpty)
@@ -318,6 +343,20 @@ internal sealed class X11HotkeyConnection(IntPtr display) : IX11HotkeyConnection
         }
     }
     public void Dispose() { lock (_displayGate) X11HotkeyNative.XCloseDisplay(display); }
+
+    public bool AreAnyKeysDown(IEnumerable<uint> keysyms)
+    {
+        lock (_displayGate)
+        {
+            var keys = new byte[32];
+            X11HotkeyNative.XQueryKeymap(display, keys);
+            return keysyms.Any(symbol =>
+            {
+                var code = X11HotkeyNative.XKeysymToKeycode(display, symbol);
+                return code != 0 && (keys[code / 8] & (1 << (code % 8))) != 0;
+            });
+        }
+    }
 }
 
 internal static class X11HotkeyNative
@@ -331,6 +370,7 @@ internal static class X11HotkeyNative
     [DllImport("libX11.so.6")] internal static extern int XGrabKey(IntPtr display, int keycode, uint modifiers, IntPtr window, [MarshalAs(UnmanagedType.Bool)] bool ownerEvents, int pointerMode, int keyboardMode);
     [DllImport("libX11.so.6")] internal static extern int XUngrabKey(IntPtr display, int keycode, uint modifiers, IntPtr window);
     [DllImport("libX11.so.6")] internal static extern int XPending(IntPtr display);
+    [DllImport("libX11.so.6")] internal static extern int XQueryKeymap(IntPtr display, [Out] byte[] keys);
     [DllImport("libX11.so.6")] internal static extern int XNextEvent(IntPtr display, out XKeyEvent value);
     [DllImport("libX11.so.6")] internal static extern int XSync(IntPtr display, [MarshalAs(UnmanagedType.Bool)] bool discard);
     [DllImport("libX11.so.6")] internal static extern int XCloseDisplay(IntPtr display);

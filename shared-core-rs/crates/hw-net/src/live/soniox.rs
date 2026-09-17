@@ -216,6 +216,27 @@ mod tests {
     }
 
     #[test]
+    fn multiple_endpoints_preserve_token_spacing_including_unspaced_languages() {
+        for (first, second, expected) in [
+            ("Hello.", " Next sentence.", "Hello. Next sentence."),
+            ("你好。", "再见。", "你好。再见。"),
+        ] {
+            let frame = json!({"tokens": [
+                {"text": first, "is_final": true},
+                {"text": "<end>", "is_final": true},
+                {"text": second, "is_final": true},
+                {"text": "<end>", "is_final": true}
+            ]});
+            assert_eq!(
+                session().parse(&frame.to_string()),
+                LiveEvent::FinalTranscript {
+                    text: expected.into()
+                }
+            );
+        }
+    }
+
+    #[test]
     fn stop_sends_empty_frame_and_drains_confirmed_tail_before_completion() {
         let mut s = session();
         s.parse(
