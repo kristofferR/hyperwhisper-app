@@ -1154,3 +1154,6 @@
 "history.autoDelete.status.enabled" = "Delete recordings older than %d %@";
 "history.autoDelete.cleanup.noItems" = "No recordings to delete";
 "history.autoDelete.cleanup.summary" = "Deleted %d recording(s) and freed %@";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Use streaming for push-to-talk";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Enable Streaming and Push to Talk. Choose the held key in Settings → Shortcuts.";

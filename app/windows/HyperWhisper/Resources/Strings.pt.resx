@@ -2776,4 +2776,10 @@ Pode voltar a descarregá-lo mais tarde.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Um erro desconhecido ocorreu</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Usar transmissão em direto com o modo Push to Talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Ative a transmissão em direto e o modo Push to Talk. Escolha a tecla a manter premida em Definições → Atalhos de Teclado.</value>
+  </data>
 </root>

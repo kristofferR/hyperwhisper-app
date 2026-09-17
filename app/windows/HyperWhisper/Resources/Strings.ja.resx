@@ -2780,4 +2780,10 @@
   <data name="app.unknown.error" xml:space="preserve">
     <value>不明なエラーが発生しました</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>プッシュトゥトークでストリーミングを使用</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>ストリーミングとプッシュトゥトークを有効にしてください。長押しするキーは「設定」→「ショートカット」で選択できます。</value>
+  </data>
 </root>

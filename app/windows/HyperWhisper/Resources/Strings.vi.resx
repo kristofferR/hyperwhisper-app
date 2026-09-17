@@ -2775,4 +2775,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Đã xảy ra lỗi không xác định</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Dùng truyền phát với chế độ Bấm để Nói</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Bật Truyền phát và Bấm để Nói. Chọn phím cần giữ trong Cài đặt → Phím tắt Bàn phím.</value>
+  </data>
 </root>

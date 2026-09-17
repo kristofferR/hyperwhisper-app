@@ -1116,3 +1116,6 @@ Kemas kini mod-mod ini untuk menggunakan model yang berbeza sebelum memadam.";
 "settings.storage.maxRecordingDuration.hour" = "1 jam";
 "settings.storage.maxRecordingDuration.hours" = "%d jam";
 "settings.storage.maxRecordingDuration.off" = "Mati";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Gunakan penstriman untuk tekan untuk bercakap";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Aktifkan Penstriman dan Tekan untuk Bercakap. Pilih kekunci yang ditahan dalam Tetapan → Pintasan Papan Kekunci.";

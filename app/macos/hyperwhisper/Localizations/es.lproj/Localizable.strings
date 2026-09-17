@@ -1117,3 +1117,6 @@ Actualiza estos modos para usar un modelo diferente antes de eliminarlo.";
 "settings.storage.maxRecordingDuration.hour" = "1 hora";
 "settings.storage.maxRecordingDuration.hours" = "%d horas";
 "settings.storage.maxRecordingDuration.off" = "Desactivado";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Usar streaming con el modo Pulsar para hablar";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Activa el streaming y el modo Pulsar para hablar. Elige la tecla que mantendrás pulsada en Ajustes → Atajos de teclado.";

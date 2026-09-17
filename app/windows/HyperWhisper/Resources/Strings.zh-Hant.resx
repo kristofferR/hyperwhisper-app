@@ -2775,4 +2775,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>發生未知錯誤</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>按住說話時使用即時串流</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>啟用即時串流和按住說話。在「設定 → 鍵盤快捷鍵」中選擇要按住的按鍵。</value>
+  </data>
 </root>

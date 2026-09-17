@@ -2776,4 +2776,10 @@ Je kunt het later opnieuw downloaden.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Er is een onbekende fout opgetreden</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Streaming gebruiken voor push-to-talk</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Schakel Streaming en Push-to-talk in. Kies de toets die je ingedrukt houdt bij Instellingen → Sneltoetsen.</value>
+  </data>
 </root>

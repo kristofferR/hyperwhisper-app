@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Notika nezināma kļūda</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Izmantot straumēšanu, runājot ar turētu taustiņu</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Ieslēdziet straumēšanu un runāšanu ar turētu taustiņu. Izvēlieties taustiņu sadaļā Iestatījumi → Tastatūras saīsinājumi.</value>
+  </data>
 </root>

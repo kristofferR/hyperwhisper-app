@@ -1116,3 +1116,6 @@ Silmeden önce bu modları farklı bir model kullanacak şekilde güncelleyin.";
 "settings.storage.maxRecordingDuration.hour" = "1 saat";
 "settings.storage.maxRecordingDuration.hours" = "%d saat";
 "settings.storage.maxRecordingDuration.off" = "Kapalı";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Bas konuş için akışı kullan";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Akışı ve Bas Konuş özelliğini açın. Basılı tutulacak tuşu Ayarlar → Kısayollar bölümünden seçin.";

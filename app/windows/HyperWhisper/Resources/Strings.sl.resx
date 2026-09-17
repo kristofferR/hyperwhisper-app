@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Došlo je do neznane napake</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Uporabi pretočni prepis ob držanju tipke za govor</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Vklopite pretočni prepis in govor ob držanju tipke. Tipko izberite v Nastavitvah → Bližnjice.</value>
+  </data>
 </root>

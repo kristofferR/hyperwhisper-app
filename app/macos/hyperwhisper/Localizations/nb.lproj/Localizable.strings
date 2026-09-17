@@ -1116,3 +1116,6 @@ Oppdater disse modusene til å bruke en annen modell før du sletter.";
 "settings.storage.maxRecordingDuration.hour" = "1 time";
 "settings.storage.maxRecordingDuration.hours" = "%d timer";
 "settings.storage.maxRecordingDuration.off" = "Av";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Bruk strømming med trykk for å snakke";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Slå på Strømming og Trykk for å snakke. Velg tasten du holder inne under Innstillinger → Snarveier.";

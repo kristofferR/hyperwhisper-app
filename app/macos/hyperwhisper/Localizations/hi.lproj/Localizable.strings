@@ -1116,3 +1116,6 @@
 "settings.storage.maxRecordingDuration.hour" = "1 घंटा";
 "settings.storage.maxRecordingDuration.hours" = "%d घंटे";
 "settings.storage.maxRecordingDuration.off" = "बंद";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "पुश टू टॉक के लिए स्ट्रीमिंग का उपयोग करें";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "स्ट्रीमिंग और पुश टू टॉक चालू करें। सेटिंग्स → कीबोर्ड शॉर्टकट में दबाकर रखने वाली कुंजी चुनें।";

@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Bilinmeyen bir hata oluştu</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Bas konuş için akışı kullan</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Akışı ve Bas Konuş özelliğini açın. Basılı tutulacak tuşu Ayarlar → Kısayollar bölümünden seçin.</value>
+  </data>
 </root>

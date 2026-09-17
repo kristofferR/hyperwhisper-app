@@ -1116,3 +1116,6 @@ Pirms dzēšanas atjauniniet šos režīmus, lai izmantotu citu modeli.";
 "settings.storage.maxRecordingDuration.hour" = "1 stunda";
 "settings.storage.maxRecordingDuration.hours" = "%d stundas";
 "settings.storage.maxRecordingDuration.off" = "Izslēgts";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Izmantot straumēšanu, runājot ar turētu taustiņu";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Ieslēdziet straumēšanu un runāšanu ar turētu taustiņu. Izvēlieties taustiņu sadaļā Iestatījumi → Tastatūras saīsinājumi.";

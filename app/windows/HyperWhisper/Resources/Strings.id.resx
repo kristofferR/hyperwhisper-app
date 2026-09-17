@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Terjadi kesalahan yang tidak diketahui</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Gunakan streaming untuk tekan untuk bicara</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Aktifkan Streaming dan Tekan untuk Bicara. Pilih tombol yang ditahan di Pengaturan → Pintasan Keyboard.</value>
+  </data>
 </root>

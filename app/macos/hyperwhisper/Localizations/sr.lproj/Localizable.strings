@@ -1116,3 +1116,6 @@ Pre brisanja ažurirajte ove režime da koriste drugi model.";
 "settings.storage.maxRecordingDuration.hour" = "1 сат";
 "settings.storage.maxRecordingDuration.hours" = "%d сати";
 "settings.storage.maxRecordingDuration.off" = "Искључено";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "Користи транскрипцију уживо при држању тастера";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "Укључите транскрипцију уживо и говор држањем тастера. Изаберите тастер у Поставкама → Пречице.";

@@ -2776,4 +2776,10 @@ You can re-download it later.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Ett okänt fel uppstod</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Använd strömning med tryck för att prata</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Aktivera Strömning och Tryck för att prata. Välj tangenten under Inställningar → Kortkommandon.</value>
+  </data>
 </root>

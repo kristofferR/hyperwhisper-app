@@ -2780,4 +2780,10 @@ Puede volver a descargarlo más tarde.</value>
   <data name="app.unknown.error" xml:space="preserve">
     <value>Ocurrió un error desconocido</value>
   </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.title" xml:space="preserve">
+    <value>Usar streaming con el modo Pulsar para hablar</value>
+  </data>
+  <data name="settings.shortcuts.pushToTalk.streaming.subtitle" xml:space="preserve">
+    <value>Activa el streaming y el modo Pulsar para hablar. Elige la tecla que mantendrás pulsada en Ajustes → Atajos de teclado.</value>
+  </data>
 </root>

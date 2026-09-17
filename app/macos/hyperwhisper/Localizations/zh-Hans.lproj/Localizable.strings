@@ -1117,3 +1117,6 @@
 "settings.storage.maxRecordingDuration.hour" = "1 小时";
 "settings.storage.maxRecordingDuration.hours" = "%d 小时";
 "settings.storage.maxRecordingDuration.off" = "关闭";
+
+"settings.shortcuts.pushToTalk.streaming.title" = "按住说话时使用流式转写";
+"settings.shortcuts.pushToTalk.streaming.subtitle" = "启用流式转写和按住说话。在「设置 → 键盘快捷键」中选择要按住的按键。";
