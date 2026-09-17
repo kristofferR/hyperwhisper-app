@@ -221,6 +221,7 @@ public static partial class SharedCoreBridge
         LiveTranscriptionProvider.OpenAi => HwLiveProvider.OpenAi,
         LiveTranscriptionProvider.Grok => HwLiveProvider.Grok,
         LiveTranscriptionProvider.GeminiTranscribe => HwLiveProvider.GeminiTranscribe,
+        LiveTranscriptionProvider.Soniox => HwLiveProvider.Soniox,
         LiveTranscriptionProvider.HyperWhisperCloud => HwLiveProvider.HyperWhisperCloud,
         _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "not a WebSocket streaming provider"),
     };

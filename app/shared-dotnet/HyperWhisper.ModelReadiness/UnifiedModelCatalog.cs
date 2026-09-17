@@ -142,6 +142,13 @@ public static class UnifiedModelCatalog
             // level flag into a portable live picker row when no model opts in.
             if (liveModel is null && sttProvider.Equals("meta", StringComparison.OrdinalIgnoreCase))
                 continue;
+            if (sttProvider.Equals("soniox", StringComparison.OrdinalIgnoreCase))
+            {
+                AddStreamingRow(result, emitted, sttProvider, "stt-rt-v5",
+                    Required(provider.@displayName, "displayName"), LanguageCodes(provider.@id),
+                    ProviderSupportsVocabulary(provider));
+                continue;
+            }
             liveModel ??= provider.@models[0];
             AddStreamingRow(result, emitted, sttProvider, liveModel.@id,
                 Required(provider.@displayName, "displayName"), LanguageCodes(provider.@id),

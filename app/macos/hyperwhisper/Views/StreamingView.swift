@@ -74,6 +74,8 @@ struct StreamingView: View {
             return settingsManager.openAIAPIKey
         case .xai:
             return settingsManager.grokAPIKey
+        case .soniox:
+            return settingsManager.sonioxAPIKey
         case .gemini:
             return settingsManager.geminiTranscribeAPIKey
         case .hyperwhisperCloud, .parakeetLocal, .nemotronLocal:
@@ -98,6 +100,8 @@ struct StreamingView: View {
             return .openai
         case .xai:
             return .grok
+        case .soniox:
+            return .soniox
         case .gemini:
             return .geminiTranscribe
         case .hyperwhisperCloud, .parakeetLocal, .nemotronLocal:
@@ -133,6 +137,7 @@ struct StreamingView: View {
             && selectedProvider != .openAI
             && selectedProvider != .xai
             && selectedProvider != .gemini
+            && selectedProvider != .soniox
             && !(selectedProvider == .hyperwhisperCloud && !cloudTierRequiresLanguageForVocabulary)
     }
 
@@ -222,6 +227,11 @@ struct StreamingView: View {
         }
         .onChange(of: settingsManager.grokAPIKey) { _, _ in
             if selectedProvider == .xai {
+                refreshSelectedProviderHealth(force: true)
+            }
+        }
+        .onChange(of: settingsManager.sonioxAPIKey) { _, _ in
+            if selectedProvider == .soniox {
                 refreshSelectedProviderHealth(force: true)
             }
         }
@@ -673,11 +683,12 @@ struct StreamingView: View {
     }
 
     private var languageCloudProviderId: String {
-        selectedProvider == .xai ? CloudProvider.grok.rawValue : CloudProvider.hyperwhisper.rawValue
+        if selectedProvider == .soniox { return CloudProvider.soniox.rawValue }
+        return selectedProvider == .xai ? CloudProvider.grok.rawValue : CloudProvider.hyperwhisper.rawValue
     }
 
     private var languageCloudModelId: String {
-        selectedProvider == .xai ? "" : "nova-3"
+        selectedProvider == .xai || selectedProvider == .soniox ? "" : "nova-3"
     }
 
     // MARK: - Warning Row Helper

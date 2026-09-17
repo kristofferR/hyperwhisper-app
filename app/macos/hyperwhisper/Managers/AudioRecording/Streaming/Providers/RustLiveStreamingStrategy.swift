@@ -179,6 +179,7 @@ final class RustLiveStreamingStrategy: StreamingProviderStrategy {
         case .elevenLabs: return .elevenLabs
         case .openAI: return .openAi
         case .xai: return .grok
+        case .soniox: return .soniox
         case .gemini: return .geminiTranscribe
         case .hyperwhisperCloud: return .hyperWhisperCloud
         case .parakeetLocal, .nemotronLocal: return nil

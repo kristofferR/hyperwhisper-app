@@ -208,7 +208,8 @@ var tests = new (string Name, Func<Task> Run)[]
     ("unauthorized responses are classified without leaking provider bodies", TestUnauthorizedAsync),
     ("cancellation stops in-flight HTTP and returns structured cancellation", TestCancellationAsync),
     ("Meta transport rechecks WAV limits retry auth and diagnostics", TestMetaTransportGuardsAsync),
-    ("live strategies construct and parse all six provider protocols", TestLiveProvidersAsync),
+    ("live strategies construct and parse provider protocols", TestLiveProvidersAsync),
+    ("Soniox drains the last tokens after its empty stop frame", TestSonioxLiveStopAsync),
     ("gemini live setup frame pins the input_audio_transcription position", TestGeminiLiveSetupFrameAsync),
     ("a mid-session provider complete is a turn boundary not the end", TestMidSessionTurnBoundaryAsync),
     ("the audio pump waits for the provider setup handshake", TestAudioPumpWaitsForStartAsync),
@@ -1022,6 +1023,37 @@ static async Task TestMetaTransportGuardsAsync()
         Assert.Equal(0, oversizedCalls);
     }
     finally { File.Delete(audio); }
+}
+
+static async Task TestSonioxLiveStopAsync()
+{
+    var socket = new PacedStreamingWebSocket([
+        new(TextFrame("""{"tokens":[{"text":"discarded guess","is_final":false}]}"""), AfterAudioFrames: 1),
+        new(TextFrame("""{"tokens":[]}"""), AfterAudioFrames: 1),
+        new(TextFrame("""{"tokens":[{"text":"Hy","is_final":true},{"text":"per whisper","is_final":false}]}"""), AfterAudioFrames: 1),
+        new(TextFrame("""{"tokens":[{"text":"perWhisper!","is_final":true}],"finished":true,"total_audio_proc_ms":100}"""), AfterStop: true),
+        new(CloseFrame(), AfterStop: true),
+    ], StopMarker: "");
+    var sink = new LiveSink();
+    var service = new LiveCloudTranscriptionService(new FakeWebSocketFactory(socket), sink);
+    var result = await service.TranscribeAsync(
+        new LiveTranscriptionConfig(LiveTranscriptionProvider.Soniox, ApiKey: "soniox-test-key", Language: "no-NO", Vocabulary: ["HyperWhisper"]),
+        socket.PacedAudio(1, 3200));
+    Assert.True(result.IsSuccess);
+    Assert.Equal("HyperWhisper!", result.Transcript);
+    Assert.Equal(1, result.AudioChunksSent);
+    Assert.Equal("stt-rt.soniox.com", socket.Options!.Uri.Host);
+    var setup = JsonDocument.Parse(socket.Sent[0].Data).RootElement;
+    Assert.Equal("soniox-test-key", setup.GetProperty("api_key").GetString());
+    Assert.Equal("stt-rt-v5", setup.GetProperty("model").GetString());
+    Assert.Equal("no", setup.GetProperty("language_hints")[0].GetString());
+    Assert.Equal("HyperWhisper", setup.GetProperty("context").GetProperty("terms")[0].GetString());
+    Assert.Equal(System.Net.WebSockets.WebSocketMessageType.Binary, socket.Sent[1].Type);
+    Assert.Equal(System.Net.WebSockets.WebSocketMessageType.Text, socket.Sent[2].Type);
+    Assert.Equal(0, socket.Sent[2].Data.Length);
+    Assert.True(sink.Updates.Any(update => !update.IsFinal && update.Text == "Hyper whisper"));
+    Assert.True(sink.Updates.Any(update => !update.IsFinal && update.Text == ""));
+    Assert.True(sink.Updates.Any(update => update.IsFinal && update.Text == "HyperWhisper!"));
 }
 
 static async Task TestLiveProvidersAsync()
@@ -2690,7 +2722,9 @@ sealed class PacedStreamingWebSocket(
         var text = messageType == System.Net.WebSockets.WebSocketMessageType.Text
             ? Encoding.UTF8.GetString(bytes)
             : null;
-        if (text is not null && text.Contains(StopMarker, StringComparison.Ordinal))
+        if (text is not null && (StopMarker.Length == 0
+            ? text.Length == 0
+            : text.Contains(StopMarker, StringComparison.Ordinal)))
         {
             _stopSent = true;
         }

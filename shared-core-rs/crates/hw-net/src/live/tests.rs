@@ -1882,12 +1882,12 @@ fn the_connect_descriptor_agrees_with_the_free_capability_functions() {
 }
 
 #[test]
-fn only_deepgram_starts_its_session_on_the_handshake() {
+fn providers_without_a_start_acknowledgement_start_on_the_handshake() {
     for provider in LiveProvider::ALL {
         let connect = credentialed(provider).connect().expect("connect");
         assert_eq!(
             connect.session_starts_on_open,
-            provider == LiveProvider::Deepgram,
+            matches!(provider, LiveProvider::Deepgram | LiveProvider::Soniox),
             "{provider:?} start-on-open changed"
         );
     }

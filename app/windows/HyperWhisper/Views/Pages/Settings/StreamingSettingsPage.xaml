@@ -229,6 +229,7 @@
                                         <ComboBoxItem Content="{loc:Loc settings.streaming.provider.openAI}" Tag="openAI"/>
                                         <ComboBoxItem Content="{loc:Loc settings.streaming.provider.xai}" Tag="xai"/>
                                         <ComboBoxItem Content="{loc:Loc settings.streaming.provider.geminiTranscribe}" Tag="geminiTranscribe"/>
+                                        <ComboBoxItem Content="{loc:Loc provider.soniox}" Tag="soniox"/>
                                     </ComboBox>
                                 </Grid>
 

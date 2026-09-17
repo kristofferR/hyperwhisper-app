@@ -93,6 +93,8 @@ public static class StreamingTranscriptionSessionFactory
 
     private static string? GetApiKey(StreamingTranscriptionProvider provider) => provider switch
     {
+        StreamingTranscriptionProvider.Soniox =>
+            ApiKeyService.Instance.GetApiKey(TranscriptionApiKeyType.Soniox),
         StreamingTranscriptionProvider.Deepgram =>
             ApiKeyService.Instance.GetApiKey(TranscriptionApiKeyType.Deepgram),
         StreamingTranscriptionProvider.ElevenLabs =>
@@ -108,6 +110,7 @@ public static class StreamingTranscriptionSessionFactory
 
     private static TranscriptionApiKeyType? GetApiKeyType(StreamingTranscriptionProvider provider) => provider switch
     {
+        StreamingTranscriptionProvider.Soniox => TranscriptionApiKeyType.Soniox,
         StreamingTranscriptionProvider.Deepgram => TranscriptionApiKeyType.Deepgram,
         StreamingTranscriptionProvider.ElevenLabs => TranscriptionApiKeyType.ElevenLabs,
         StreamingTranscriptionProvider.Xai => TranscriptionApiKeyType.Grok,

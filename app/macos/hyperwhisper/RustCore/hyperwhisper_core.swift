@@ -11366,6 +11366,7 @@ public enum HwLiveProvider {
     case grok
     case geminiTranscribe
     case hyperWhisperCloud
+    case soniox
 }
 
 
@@ -11390,6 +11391,8 @@ public struct FfiConverterTypeHwLiveProvider: FfiConverterRustBuffer {
         case 5: return .geminiTranscribe
         
         case 6: return .hyperWhisperCloud
+
+        case 7: return .soniox
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -11421,6 +11424,10 @@ public struct FfiConverterTypeHwLiveProvider: FfiConverterRustBuffer {
         
         case .hyperWhisperCloud:
             writeInt(&buf, Int32(6))
+
+
+        case .soniox:
+            writeInt(&buf, Int32(7))
         
         }
     }

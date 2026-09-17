@@ -1133,15 +1133,22 @@ static async Task LiveDeliveredFinalIsNotDuplicated()
 
 static Task LiveSinkForwardsUpdates()
 {
-    var sink = new LinuxLiveTranscriptSink();
+    var preview = new EphemeralLiveTranscriptPreview();
+    preview.Begin();
+    var sink = new LinuxLiveTranscriptSink(preview);
     var updates = new List<LiveTranscriptUpdate>();
     sink.TranscriptReceived += (_, _) => throw new InvalidOperationException("subscriber");
     sink.TranscriptReceived += (_, update) => updates.Add(update);
     sink.OnTranscript(new(" partial ", false));
+    Assert(preview.Snapshot.DisplayText == "partial", "live preview lost the partial");
+    sink.OnTranscript(new("", false));
+    Assert(preview.Snapshot.DisplayText == "", "live preview retained a withdrawn partial");
+    sink.OnTranscript(new(" ", true));
     sink.OnTranscript(new(" final ", true));
     Assert(updates.SequenceEqual(new[]
     {
         new LiveTranscriptUpdate("partial", false),
+        new LiveTranscriptUpdate("", false),
         new LiveTranscriptUpdate("final", true),
     }), "production live sink lost or altered transcript update semantics");
     return Task.CompletedTask;

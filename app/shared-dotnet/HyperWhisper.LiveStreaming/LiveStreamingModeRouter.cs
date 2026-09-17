@@ -91,6 +91,10 @@ public sealed class LiveStreamingModeRouter(ILiveStreamingCredentialSource crede
         usesLicense = false;
         switch (storageValue?.Trim().ToLowerInvariant())
         {
+            case "soniox":
+                provider = LiveTranscriptionProvider.Soniox;
+                credentialAccount = "SonioxApiKey";
+                return true;
             case "deepgram":
                 provider = LiveTranscriptionProvider.Deepgram;
                 credentialAccount = "DeepgramApiKey";

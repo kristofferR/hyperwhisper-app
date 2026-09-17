@@ -107,7 +107,7 @@ form, and `FromPersistedString` stays native.
 | Universal Key | Windows Source (`WINDOWS_STREAMING_PAIRS` row → native) | Linux Source |
 |---|---|---|
 | `streaming.enabled` | `SettingsData.StreamingEnabled` | `streaming.enabled` |
-| `streaming.provider` | `SettingsData.StreamingProvider` (setter falls back to `hyperwhisperCloud` for an unknown value) | `streaming.provider` (stored verbatim) |
+| `streaming.provider` (including `soniox` for Soniox BYOK real-time) | `SettingsData.StreamingProvider` (setter falls back to `hyperwhisperCloud` for an unknown value) | `streaming.provider` (stored verbatim) |
 | `streaming.language` | `SettingsData.StreamingLanguage` | `streaming.language` (stored verbatim) |
 | `streaming.deepgramModel` | `SettingsData.StreamingDeepgramModel` (setter collapses anything but `nova-3-medical` to `nova-3-general`) | `streaming.deepgramModel` (stored verbatim) |
 | `streaming.fastFormatting` | `SettingsData.StreamingFastFormatting` | `streaming.fastFormatting` |

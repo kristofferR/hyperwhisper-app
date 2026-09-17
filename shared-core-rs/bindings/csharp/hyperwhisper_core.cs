@@ -12582,7 +12582,8 @@ internal enum HwLiveProvider: int {
     OpenAi,
     Grok,
     GeminiTranscribe,
-    HyperWhisperCloud
+    HyperWhisperCloud,
+    Soniox
 }
 
 class FfiConverterTypeHwLiveProvider: FfiConverterRustBuffer<HwLiveProvider> {

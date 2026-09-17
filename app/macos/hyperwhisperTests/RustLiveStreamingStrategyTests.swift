@@ -38,7 +38,7 @@ struct RustLiveStreamingStrategyTests {
     /// are deliberately absent: they are not websocket protocols, have no
     /// `HwLiveProvider` arm, and route to their own clients.
     private static let remoteProviders: [StreamingTranscriptionProvider] = [
-        .hyperwhisperCloud, .deepgram, .elevenLabs, .openAI, .xai, .gemini
+        .hyperwhisperCloud, .deepgram, .elevenLabs, .openAI, .xai, .gemini, .soniox
     ]
 
     private func config(
@@ -658,6 +658,7 @@ struct RustLiveStreamingStrategyTests {
         let cases: [(StreamingTranscriptionProvider, StreamingSessionConfig)] = [
             (.deepgram, config()),
             (.xai, config()),
+            (.soniox, config()),
             (.hyperwhisperCloud, config(licenseKey: "HW-1"))
         ]
         for (provider, sessionConfig) in cases {
@@ -673,6 +674,57 @@ struct RustLiveStreamingStrategyTests {
             }
             #expect(sent == pcm)
         }
+    }
+
+    @Test("Soniox uses its own credential and sends setup before binary audio")
+    func sonioxSetupAndProviderIdentity() throws {
+        #expect(StreamingTranscriptionProvider.fromStorageValue("soniox") == .soniox)
+        #expect(StreamingTranscriptionProvider.soniox.apiKeyType == .soniox)
+        #expect(StreamingTranscriptionProvider.soniox.cloudHealthProvider == .soniox)
+        let sessionConfig = config(language: "no-NO", vocabulary: "HyperWhisper", apiKey: "soniox-test-key")
+        let (strategy, url) = try connected(.soniox, sessionConfig)
+        #expect(url.absoluteString == "wss://stt-rt.soniox.com/transcribe-websocket")
+        #expect(strategy.buildWebSocketRequest(url: url, config: sessionConfig) == nil)
+        let frames = strategy.startMessages(config: sessionConfig)
+        #expect(frames.count == 1)
+        let data = try #require(try text(frames.first).data(using: .utf8))
+        let setup = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(setup["api_key"] as? String == "soniox-test-key")
+        #expect(setup["model"] as? String == "stt-rt-v5")
+        #expect(setup["audio_format"] as? String == "pcm_s16le")
+        #expect(setup["language_hints"] as? [String] == ["no"])
+        let context = try #require(setup["context"] as? [String: Any])
+        #expect(context["terms"] as? [String] == ["HyperWhisper"])
+    }
+
+    @Test("Soniox stop drains the final utterance and maps session completion")
+    func sonioxStopAndFinalText() throws {
+        let (strategy, _) = try connected(.soniox, config())
+        guard case let .partialTranscript(partial) = strategy.parseMessage(
+            #"{"tokens":[{"text":"Hy","is_final":true},{"text":"per whisper","is_final":false}]}"#
+        ) else {
+            Issue.record("Soniox must preview confirmed and provisional tokens together")
+            return
+        }
+        #expect(partial == "Hyper whisper")
+        let steps = strategy.stopSequence()
+        guard steps.count == 3,
+              case let .sendText(stop) = steps[0],
+              case .waitForSessionComplete = steps[1],
+              case .closeWebSocket = steps[2] else {
+            Issue.record("Soniox must send an empty frame and wait for completion")
+            return
+        }
+        #expect(stop.isEmpty)
+        guard case let .finalTranscriptAndSessionComplete(text, duration, credits) = strategy.parseMessage(
+            #"{"tokens":[{"text":"perWhisper!","is_final":true}],"finished":true,"total_audio_proc_ms":1000}"#
+        ) else {
+            Issue.record("Soniox must deliver the final text before completion")
+            return
+        }
+        #expect(text == "HyperWhisper!")
+        #expect(duration == 1)
+        #expect(credits == 0)
     }
 
     // MARK: - Capabilities
@@ -701,6 +753,7 @@ struct RustLiveStreamingStrategyTests {
             .elevenLabs: "ElevenLabs (Streaming)",
             .openAI: "OpenAI (Streaming)",
             .xai: "SpaceXAI (Streaming)",
+            .soniox: "Soniox (Streaming)",
             .gemini: "Gemini 3.5 Transcribe (Streaming)"
         ]
         for (provider, label) in shipped {
@@ -725,15 +778,17 @@ struct RustLiveStreamingStrategyTests {
         }
     }
 
-    @Test("Deepgram alone treats the socket opening as the session starting")
-    func onlyDeepgramStartsOnOpen() throws {
+    @Test("Providers without a start acknowledgement start on socket open")
+    func providersWithoutAcknowledgementStartOnOpen() throws {
         // Deepgram's only session-shaped frame (Metadata) does not arrive until
         // after audio has been sent, so a client that waited for it would
         // deadlock.
         let (deepgram, _) = try connected(.deepgram, config())
         #expect(deepgram.sessionStartsOnWebSocketOpen)
+        let (soniox, _) = try connected(.soniox, config())
+        #expect(soniox.sessionStartsOnWebSocketOpen)
 
-        for provider in Self.remoteProviders where provider != .deepgram {
+        for provider in Self.remoteProviders where provider != .deepgram && provider != .soniox {
             let (strategy, _) = try connected(
                 provider,
                 config(licenseKey: "HW-1"),

@@ -56,6 +56,7 @@ The **Engine** section is visible only after you turn on streaming. Open this se
 | ElevenLabs | Yes | No | No |
 | OpenAI | Yes | No | No |
 | SpaceXAI | Yes | Yes | No |
+| Soniox | Yes | Yes | No |
 | Gemini 3.5 Transcribe | Yes | Yes | No |
 | Parakeet (On-Device) | No | No | V3 (Multilingual) / V2 (English) |
 | Nemotron 3.5 (On-Device) | No | No | Multilingual / Latin |
@@ -70,20 +71,20 @@ The provider list is not the same on each platform:
 
 | Platform | Providers |
 | --- | --- |
-| macOS | All eight |
-| Windows | HyperWhisper Cloud, Deepgram, ElevenLabs, OpenAI, SpaceXAI, Gemini 3.5 Transcribe |
-| Linux | All eight |
+| macOS | All nine |
+| Windows | HyperWhisper Cloud, Deepgram, ElevenLabs, OpenAI, SpaceXAI, Soniox, Gemini 3.5 Transcribe |
+| Linux | All nine |
 
 On Linux, the two on-device providers run through the same Parakeet engine process that Linux uses for batch transcription.
 
 <Note>
-  On Linux, the provider picker shows the internal identifiers, not the display names: `deepgram`, `elevenlabs`, `openai`, `grok` (SpaceXAI), `geminiTranscribe` (Gemini 3.5 Transcribe), `hyperwhisper` (HyperWhisper Cloud), `parakeetLocal`, and `nemotronLocal`. The default is `deepgram`, and not HyperWhisper Cloud. Linux reads the provider key from the **Credentials** page and never keeps it in the settings file.
+  On Linux, the provider picker shows the internal identifiers, not the display names: `deepgram`, `elevenlabs`, `openai`, `grok` (SpaceXAI), `soniox`, `geminiTranscribe` (Gemini 3.5 Transcribe), `hyperwhisper` (HyperWhisper Cloud), `parakeetLocal`, and `nemotronLocal`. The default is `deepgram`, and not HyperWhisper Cloud. Linux reads the provider key from the **Credentials** page and never keeps it in the settings file.
 
   You can also select a local model in the **Unified model library**. Select an installed streaming model, then click **Use for live transcription**. HyperWhisper turns on streaming and sets the provider and the model for you.
 </Note>
 
 <Note>
-  HyperWhisper sends the entries from the [Vocabulary](/vocabulary) section to HyperWhisper Cloud, Deepgram, SpaceXAI and Gemini 3.5 Transcribe. For Deepgram you must set an explicit language; SpaceXAI and Gemini 3.5 Transcribe accept the terms with any language, including Automatic. For HyperWhisper Cloud the rule follows the live engine: Deepgram Nova 3 needs an explicit language, and Gemini 3.5 Transcribe does not. ElevenLabs and OpenAI do not support vocabulary boosting in their streaming API. If you have vocabulary entries and select one of those two providers, a warning appears. [Text replacements](/vocabulary#text-replacements) apply during streaming only on macOS with an on-device provider (Parakeet or Nemotron 3.5). Cloud streaming providers receive only the vocabulary entries that have no replacement, as boosting hints. This is the same rule on macOS and Windows. Linux sends every vocabulary word as a boosting hint, and it does not remove a word that has a replacement.
+  HyperWhisper sends the entries from the [Vocabulary](/vocabulary) section to HyperWhisper Cloud, Deepgram, SpaceXAI, Soniox and Gemini 3.5 Transcribe. For Deepgram you must set an explicit language; SpaceXAI, Soniox and Gemini 3.5 Transcribe accept the terms with any language, including Automatic. For HyperWhisper Cloud the rule follows the live engine: Deepgram Nova 3 needs an explicit language, and Gemini 3.5 Transcribe does not. ElevenLabs and OpenAI do not support vocabulary boosting in their streaming API. If you have vocabulary entries and select one of those two providers, a warning appears. [Text replacements](/vocabulary#text-replacements) apply during streaming only on macOS with an on-device provider (Parakeet or Nemotron 3.5). Cloud streaming providers receive only the vocabulary entries that have no replacement, as boosting hints. This is the same rule on macOS and Windows. Linux sends every vocabulary word as a boosting hint, and it does not remove a word that has a replacement.
 </Note>
 
 ## HyperWhisper Cloud Live Engine
@@ -108,6 +109,12 @@ The picker changes the engine only. It does not change your account key, and it 
     The engine picker is the second list in the **Live transcription** section. It shows the internal identifiers: `deepgramNova3` and `geminiTranscribe`. The setting key in the settings file is `streaming.cloudTier`.
   </Tab>
 </Tabs>
+
+## Soniox
+
+Soniox streams directly with your Soniox API key and uses the `stt-rt-v5` model. Add the key in **Model Library → API Keys**, then select **Soniox** in the streaming provider picker.
+
+You see provisional text while speaking. Confirmed utterances are inserted when Soniox detects an endpoint. Stopping streaming waits for the remaining confirmed text before closing the connection. Vocabulary hints work with an explicit language or **Automatic**.
 
 ## Gemini 3.5 Transcribe Options
 

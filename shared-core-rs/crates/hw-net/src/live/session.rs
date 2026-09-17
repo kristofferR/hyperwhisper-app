@@ -13,7 +13,7 @@
 
 use super::config::{LiveConfig, LiveConnect, LiveError, LiveEvent, LiveFrame, StopStep};
 use super::LiveProvider;
-use super::{deepgram, elevenlabs, gemini, hw_cloud, openai, xai};
+use super::{deepgram, elevenlabs, gemini, hw_cloud, openai, soniox, xai};
 
 /// Everything a protocol remembers between frames.
 ///
@@ -50,6 +50,9 @@ pub(super) struct SessionState {
 
     /// xAI: the running committed transcript for the whole session.
     pub(super) committed_transcript: String,
+
+    /// Soniox: confirmed tokens in the current utterance, joined without separators.
+    pub(super) soniox_utterance: String,
 }
 
 impl SessionState {
@@ -102,6 +105,7 @@ impl LiveSession {
         self.state.reset();
         match self.config.provider {
             LiveProvider::Deepgram => deepgram::connect(&self.config),
+            LiveProvider::Soniox => soniox::connect(&self.config),
             LiveProvider::ElevenLabs => elevenlabs::connect(&self.config),
             LiveProvider::OpenAi => openai::connect(&self.config),
             LiveProvider::Grok => xai::connect(&self.config),
@@ -129,7 +133,8 @@ impl LiveSession {
         match self.config.provider {
             LiveProvider::Deepgram => deepgram::control_frames(&mut self.state, now_ms),
             LiveProvider::OpenAi => openai::control_frames(&mut self.state, now_ms),
-            LiveProvider::ElevenLabs
+            LiveProvider::Soniox
+            | LiveProvider::ElevenLabs
             | LiveProvider::Grok
             | LiveProvider::GeminiTranscribe
             | LiveProvider::HyperWhisperCloud => Vec::new(),
@@ -170,6 +175,7 @@ impl LiveSession {
     pub fn parse_value(&mut self, root: &serde_json::Value, text: &str) -> LiveEvent {
         match self.config.provider {
             LiveProvider::Deepgram => deepgram::parse(root, text),
+            LiveProvider::Soniox => soniox::parse(&mut self.state, root),
             LiveProvider::ElevenLabs => elevenlabs::parse(root),
             LiveProvider::OpenAi => openai::parse(&mut self.state, root),
             LiveProvider::Grok => xai::parse(&mut self.state, root),
@@ -187,6 +193,7 @@ impl LiveSession {
     pub fn stop_sequence(&mut self, now_ms: u64) -> Vec<StopStep> {
         match self.config.provider {
             LiveProvider::Deepgram => deepgram::stop_sequence(),
+            LiveProvider::Soniox => soniox::stop_sequence(),
             LiveProvider::ElevenLabs => elevenlabs::stop_sequence(),
             LiveProvider::OpenAi => openai::stop_sequence(&mut self.state, now_ms),
             LiveProvider::Grok => xai::stop_sequence(),
