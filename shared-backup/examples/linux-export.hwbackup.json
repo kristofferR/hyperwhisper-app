@@ -90,6 +90,7 @@
         "pushToTalkShortcutModifiers": "None",
         "pushToTalkShortcutKey": "",
         "pushToTalkDoublePressLock": true,
+        "pushToTalkUsesStreaming": false,
         "autoIncreaseMicVolume": false,
         "keepMicrophoneWarm": true,
         "audioEnvironmentPolicy": "duck",

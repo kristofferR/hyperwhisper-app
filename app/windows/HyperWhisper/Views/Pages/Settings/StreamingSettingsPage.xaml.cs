@@ -33,6 +33,7 @@ public partial class StreamingSettingsPage : Page
         _isInitializing = true;
 
         StreamingEnabledCheckbox.IsChecked = _settings.StreamingEnabled;
+        PushToTalkStreamingBox.IsChecked = _settings.PushToTalkUsesStreaming;
         StreamingShortcutBox.Text = _settings.StreamingShortcut.ToDisplayString();
         UpdateStreamingShortcutConflict();
 
@@ -270,8 +271,14 @@ public partial class StreamingSettingsPage : Page
         UpdateVocabularyWarning();
     }
 
+    private void PushToTalkStreaming_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.PushToTalkUsesStreaming = PushToTalkStreamingBox.IsChecked == true;
+    }
+
     private void UpdateStreamingOptionsVisibility()
     {
+        PushToTalkStreamingBox.IsEnabled = _settings.StreamingEnabled && _settings.PushToTalk.Mode != PushToTalkMode.Disabled;
         var visibility = _settings.StreamingEnabled ? Visibility.Visible : Visibility.Collapsed;
         ShortcutSeparator.Visibility = visibility;
         ShortcutRow.Visibility = visibility;

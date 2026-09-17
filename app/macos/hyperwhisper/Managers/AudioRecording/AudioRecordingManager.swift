@@ -229,6 +229,12 @@ class AudioRecordingManager: NSObject, ObservableObject {
     /// unable to stop it via the modifier, so we defer the reconfigure until the
     /// recording finishes and the monitor is safely idle.
     private var needsPushToTalkReconfigure = false
+    private let streamingPushToTalkSession = PushToTalkStreamingSession()
+    private var streamingPushToTalkStateSubscription: AnyCancellable?
+
+    private var pushToTalkUsesStreaming: Bool {
+        settingsManager?.pushToTalkUsesStreaming == true && settingsManager?.streamingEnabled == true
+    }
 
     // MARK: - Initialization
 
@@ -326,6 +332,21 @@ class AudioRecordingManager: NSObject, ObservableObject {
         self.providerHealthManager = providerHealthManager
         self.appState = appState
         self.licenseManager = licenseManager
+
+        streamingPushToTalkStateSubscription = appState?.$recordingState
+            .dropFirst()
+            .sink { [weak self] state in
+                guard let self, state == .idle else { return }
+                // Includes errors, Escape, and the streaming duration limit.
+                if self.streamingPushToTalkSession.isActive {
+                    self.streamingPushToTalkSession.recordingBecameIdle(
+                        isStreamingActive: self.recordingTranscriptionFlow.isStreamingActive
+                    )
+                } else if self.needsPushToTalkReconfigure {
+                    self.needsPushToTalkReconfigure = false
+                    self.setupPushToTalk()
+                }
+            }
 
         // Pass dependencies to sub-managers that need them
         lifecycleManager.configure(settingsManager: settingsManager)
@@ -461,7 +482,7 @@ class AudioRecordingManager: NSObject, ObservableObject {
         // able to stop it via the modifier. Defer the reconfigure until the
         // recording finishes; it is reapplied from the recording-end binding
         // once the monitor is safely idle.
-        if isRecording {
+        if isRecording || recordingTranscriptionFlow.isStreamingActive || streamingPushToTalkSession.isActive {
             AppLogger.audio.info("Deferring Push to Talk reconfigure — recording in progress")
             needsPushToTalkReconfigure = true
             return
@@ -488,7 +509,9 @@ class AudioRecordingManager: NSObject, ObservableObject {
                 BareModifierKeyMonitor.shared.onModifierDown = { [weak self] in
                     Task { @MainActor in
                         guard let self = self else { return }
-                        self.transcriptionPipeline?.prewarmCloudConnectionIfActive()
+                        if !self.pushToTalkUsesStreaming {
+                            self.transcriptionPipeline?.prewarmCloudConnectionIfActive()
+                        }
                         if self.appState?.isToggleRecordingShortcutHeld == true {
                             AppLogger.ui.debug("🚫 Bare modifier pressed but toggle shortcut is held - ignoring")
                             return
@@ -497,7 +520,7 @@ class AudioRecordingManager: NSObject, ObservableObject {
                         // CRITICAL GUARD: Prevent Push to Talk from interfering with existing recordings
                         // If recording is already active (started by toggle shortcut or other means),
                         // reset the PTT monitor to prevent its timers from interfering.
-                        if self.isRecording {
+                        if self.isRecording || self.recordingTranscriptionFlow.isStreamingActive || self.streamingPushToTalkSession.isActive {
                             AppLogger.ui.debug("🚫 Bare modifier pressed but already recording - resetting monitor")
                             BareModifierKeyMonitor.shared.resetToIdle()
                             return
@@ -526,7 +549,7 @@ class AudioRecordingManager: NSObject, ObservableObject {
                             return
                         }
                         // Only stop if we're actually recording
-                        guard self.isRecording else {
+                        guard self.isRecording || self.streamingPushToTalkSession.isActive else {
                             AppLogger.ui.debug("🚫 Bare modifier stop signal but not recording - ignoring")
                             return
                         }
@@ -555,7 +578,7 @@ class AudioRecordingManager: NSObject, ObservableObject {
                             return
                         }
                         AppLogger.ui.debug("⚠️ Other key pressed while modifier held - cancelling recording")
-                        if self.isRecording {
+                        if self.isRecording || self.streamingPushToTalkSession.isActive {
                             self.stopPushToTalkRecordingWithoutTranscription()
                         }
                     }
@@ -596,12 +619,15 @@ class AudioRecordingManager: NSObject, ObservableObject {
             KeyboardShortcuts.onKeyDown(for: .pushToTalk) { [weak self] in
                 Task { @MainActor in
                     guard let self = self else { return }
-                    self.transcriptionPipeline?.prewarmCloudConnectionIfActive()
+                    guard self.settingsManager?.pushToTalkMode == .custom else { return }
+                    if !self.pushToTalkUsesStreaming {
+                        self.transcriptionPipeline?.prewarmCloudConnectionIfActive()
+                    }
                     if self.appState?.isToggleRecordingShortcutHeld == true {
                         AppLogger.ui.debug("🚫 Push to Talk pressed while toggle shortcut held - ignoring")
                         return
                     }
-                    if self.isRecording {
+                    if self.isRecording || self.recordingTranscriptionFlow.isStreamingActive || self.streamingPushToTalkSession.isActive {
                         AppLogger.ui.debug("🚫 Push to Talk pressed but already recording - ignoring")
                         return
                     }
@@ -615,7 +641,7 @@ class AudioRecordingManager: NSObject, ObservableObject {
                 Task { @MainActor in
                     guard let self = self else { return }
                     
-                    if !self.isRecording {
+                    if !self.isRecording && !self.streamingPushToTalkSession.isActive {
                         AppLogger.ui.debug("🚫 Push to Talk released but not recording - ignoring")
                         return
                     }
@@ -923,57 +949,61 @@ class AudioRecordingManager: NSObject, ObservableObject {
 
     // MARK: - Public API: Push to Talk
 
-    /// Start recording for Push to Talk feature
-    ///
-    /// **What This Does:**
-    /// Initiates audio recording when Push to Talk key is pressed.
-    /// Uses the current selected mode for transcription.
-    /// This is similar to toggleRecordingWithTranscription but only starts recording.
-    ///
-    /// **When to Call:**
-    /// - When Push to Talk key is pressed (onKeyDown)
-    /// - RecordingDialog will appear automatically showing waveform visualization
-    ///
-    /// **Note:**
-    /// The actual recording file is created immediately and the recording dialog appears.
-    /// When the key is released, call either stopPushToTalkRecordingWithTranscription() or
-    /// stopPushToTalkRecordingWithoutTranscription() depending on duration validation.
+    /// Start a held session using Streaming when opted in, or the selected regular mode.
+    /// Release finishes transcription; interference cancels the owned session.
     func startPushToTalkRecording() {
+        guard !isRecording, !recordingTranscriptionFlow.isStreamingActive,
+              !recordingTranscriptionFlow.isStopInProgress, !streamingPushToTalkSession.isActive else { return }
+        if pushToTalkUsesStreaming {
+            appState?.isStreamingShortcutTriggered = true
+            toggleRecordingWithTranscription(trigger: .pushToTalk)
+            guard let startTask = recordingTranscriptionFlow.toggleTask else { return }
+            streamingPushToTalkSession.begin(
+                startTask: startTask,
+                isRecording: { [weak self] in self?.recordingTranscriptionFlow.isStreamingActive == true },
+                stop: { [weak self] cancelled in
+                    guard let self,
+                          self.recordingTranscriptionFlow.currentRecordingTriggerSource == .pushToTalk,
+                          self.recordingTranscriptionFlow.isStreamingActive else { return }
+                    await self.recordingTranscriptionFlow.handleStopRecordingWithTranscription(
+                        mode: self.appState?.currentSessionModeName ?? "Default", cancelled: cancelled
+                    )
+                },
+                onEnd: { [weak self] in
+                    BareModifierKeyMonitor.shared.resetToIdle()
+                    if let self, !self.recordingTranscriptionFlow.isStreamingActive,
+                       self.recordingTranscriptionFlow.currentRecordingTriggerSource == .pushToTalk {
+                        // Startup may have been cancelled before the flow even ran.
+                        self.appState?.isStreamingShortcutTriggered = false
+                        self.recordingTranscriptionFlow.currentRecordingTriggerSource = .unknown
+                    }
+                    if self?.needsPushToTalkReconfigure == true {
+                        self?.needsPushToTalkReconfigure = false
+                        self?.setupPushToTalk()
+                    }
+                }
+            )
+            return
+        }
         toggleRecordingWithTranscription(trigger: .pushToTalk)
     }
 
-    /// Stop recording and transcribe (used when recording meets minimum duration)
-    ///
-    /// **What This Does:**
-    /// Stops recording and initiates transcription of the audio.
-    ///
-    /// **Push to Talk Flow:**
-    /// 1. Stop recording
-    /// 2. Create processing transcript
-    /// 3. Send to transcription provider
-    /// 4. Display results in recording dialog
-    /// 5. Auto-paste if enabled
-    ///
-    /// **When to Call:**
-    /// - When Push to Talk key is released AND recording is active
+    /// Finish the held session, including any final streaming transcript.
     func stopPushToTalkRecordingWithTranscription() {
+        if streamingPushToTalkSession.isActive {
+            streamingPushToTalkSession.end(cancelled: false)
+            return
+        }
         // Stop recording and transcribe using the standard toggle flow
         toggleRecordingWithTranscription(trigger: .pushToTalk)
     }
 
-    /// Stop recording without transcribing (used when recording is too short or cancelled)
-    ///
-    /// **What This Does:**
-    /// Cancels the recording without transcribing it.
-    ///
-    /// **Push to Talk Flow:**
-    /// 1. Stop recording
-    /// 2. Discard audio file without saving
-    /// 3. Close recording dialog
-    ///
-    /// **When to Call:**
-    /// - When recording should be discarded (too short, interference detected, etc.)
+    /// Cancel the held session. Text already streamed into another app remains there.
     func stopPushToTalkRecordingWithoutTranscription() {
+        if streamingPushToTalkSession.isActive {
+            streamingPushToTalkSession.end(cancelled: true)
+            return
+        }
         handleCancelShortcut()
     }
 

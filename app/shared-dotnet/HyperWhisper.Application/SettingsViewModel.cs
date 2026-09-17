@@ -26,6 +26,7 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _pushToTalkShortcutModifiers = "None";
     private string _pushToTalkShortcutKey = string.Empty;
     private bool _pushToTalkDoublePressLock;
+    private bool _pushToTalkUsesStreaming;
     private bool _pasteResultText = true;
     private bool _removeFillerWords = true;
     private bool _autocapitalizeInsert = true;
@@ -146,6 +147,7 @@ public sealed class SettingsViewModel : ViewModelBase
             Notify(nameof(PushToTalkUsesModifier));
             Notify(nameof(PushToTalkUsesCustomShortcut));
             Notify(nameof(PushToTalkIsEnabled));
+            Notify(nameof(CanUsePushToTalkStreaming));
         }
     }
 
@@ -154,12 +156,14 @@ public sealed class SettingsViewModel : ViewModelBase
     /// talk is on, and only the row the chosen mode uses.
     /// </summary>
     public bool PushToTalkIsEnabled => !string.Equals(PushToTalkMode, "Disabled", StringComparison.Ordinal);
+    public bool CanUsePushToTalkStreaming => PushToTalkIsEnabled && StreamingEnabled;
     public bool PushToTalkUsesModifier => string.Equals(PushToTalkMode, "Modifier", StringComparison.Ordinal);
     public bool PushToTalkUsesCustomShortcut => string.Equals(PushToTalkMode, "CustomShortcut", StringComparison.Ordinal);
     public string PushToTalkModifier { get => _pushToTalkModifier; set => Set(ref _pushToTalkModifier, value ?? "LeftAlt"); }
     public string PushToTalkShortcutModifiers { get => _pushToTalkShortcutModifiers; set => Set(ref _pushToTalkShortcutModifiers, value ?? "None"); }
     public string PushToTalkShortcutKey { get => _pushToTalkShortcutKey; set => Set(ref _pushToTalkShortcutKey, value ?? string.Empty); }
     public bool PushToTalkDoublePressLock { get => _pushToTalkDoublePressLock; set => Set(ref _pushToTalkDoublePressLock, value); }
+    public bool PushToTalkUsesStreaming { get => _pushToTalkUsesStreaming; set => Set(ref _pushToTalkUsesStreaming, value); }
     public bool PasteResultText { get => _pasteResultText; set => Set(ref _pasteResultText, value); }
     public bool RemoveFillerWords { get => _removeFillerWords; set => Set(ref _removeFillerWords, value); }
     public bool AutocapitalizeInsert { get => _autocapitalizeInsert; set => Set(ref _autocapitalizeInsert, value); }
@@ -190,7 +194,12 @@ public sealed class SettingsViewModel : ViewModelBase
     public bool StreamingEnabled
     {
         get => _streamingEnabled;
-        set { if (Set(ref _streamingEnabled, value)) Notify(nameof(StreamingCloudTierRowVisible)); }
+        set
+        {
+            if (!Set(ref _streamingEnabled, value)) return;
+            Notify(nameof(StreamingCloudTierRowVisible));
+            Notify(nameof(CanUsePushToTalkStreaming));
+        }
     }
     public string StreamingProvider
     {
@@ -355,6 +364,7 @@ public sealed class SettingsViewModel : ViewModelBase
         PushToTalkShortcutModifiers = _settings.Get("pushToTalkShortcutModifiers", "None") ?? "None";
         PushToTalkShortcutKey = _settings.Get("pushToTalkShortcutKey", string.Empty) ?? string.Empty;
         PushToTalkDoublePressLock = _settings.Get("pushToTalkDoublePressLock", false);
+        PushToTalkUsesStreaming = _settings.Get("pushToTalkUsesStreaming", false);
         PasteResultText = _settings.Get("textOutput.pasteResultText", true);
         RemoveFillerWords = _settings.Get("textOutput.removeFillerWords", true);
         AutocapitalizeInsert = _settings.Get("textOutput.autocapitalizeInsert", true);
@@ -430,6 +440,7 @@ public sealed class SettingsViewModel : ViewModelBase
         _settings.Set("pushToTalkShortcutModifiers", PushToTalkShortcutModifiers);
         _settings.Set("pushToTalkShortcutKey", PushToTalkShortcutKey);
         _settings.Set("pushToTalkDoublePressLock", PushToTalkDoublePressLock);
+        _settings.Set("pushToTalkUsesStreaming", PushToTalkUsesStreaming);
         _settings.Set("textOutput.pasteResultText", PasteResultText);
         _settings.Set("textOutput.removeFillerWords", RemoveFillerWords);
         _settings.Set("textOutput.autocapitalizeInsert", AutocapitalizeInsert);
@@ -484,6 +495,7 @@ public sealed class SettingsViewModel : ViewModelBase
         PushToTalkShortcutModifiers = "None";
         PushToTalkShortcutKey = string.Empty;
         PushToTalkDoublePressLock = false;
+        PushToTalkUsesStreaming = false;
         Status.Success("Shortcut defaults restored; save settings to apply them");
     }
 

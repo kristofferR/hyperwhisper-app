@@ -207,6 +207,7 @@ class BackupManager: ObservableObject {
             shortcuts: BackupShortcutSettings(
                 pushToTalkMode: settingsManager.pushToTalkMode.rawValue,
                 pushToTalkDoublePressEnabled: settingsManager.pushToTalkDoublePressEnabled,
+                pushToTalkUsesStreaming: settingsManager.pushToTalkUsesStreaming,
                 quickCaptureEnabled: settingsManager.quickCaptureEnabled,
                 quickCaptureModeId: settingsManager.quickCaptureModeId
             ),
@@ -1307,6 +1308,9 @@ class BackupManager: ObservableObject {
             settingsManager.pushToTalkMode = mode
         }
         settingsManager.pushToTalkDoublePressEnabled = settings.shortcuts.pushToTalkDoublePressEnabled
+        if let usesStreaming = settings.shortcuts.pushToTalkUsesStreaming {
+            settingsManager.pushToTalkUsesStreaming = usesStreaming
+        }
         // Quick Capture (optional in backup payload — pre-feature backups omit these).
         if let qcEnabled = settings.shortcuts.quickCaptureEnabled {
             settingsManager.quickCaptureEnabled = qcEnabled

@@ -121,7 +121,8 @@
         },
         "shortcuts": {
           "pushToTalkMode": "disabled",
-          "pushToTalkDoublePressEnabled": false
+          "pushToTalkDoublePressEnabled": false,
+          "pushToTalkUsesStreaming": false
         },
         "aiModel": {
           "showExperimentalModels": false,

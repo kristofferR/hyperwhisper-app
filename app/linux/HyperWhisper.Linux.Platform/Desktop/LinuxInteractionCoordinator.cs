@@ -12,6 +12,7 @@ public sealed record LinuxInteractionConfiguration(
     public GlobalShortcut? StreamingShortcut { get; init; } = new(
         ShortcutModifiers.Control | ShortcutModifiers.Shift, new ShortcutKeyCode("Space"));
     public bool StreamingEnabled { get; init; }
+    public bool PushToTalkUsesStreaming { get; init; }
     public GlobalShortcut? SessionCancelShortcut { get; init; } = new(
         ShortcutModifiers.None, new ShortcutKeyCode("Escape"));
 
@@ -25,7 +26,7 @@ public sealed record LinuxInteractionConfiguration(
         new GlobalShortcut(ShortcutModifiers.Control | ShortcutModifiers.Shift, new ShortcutKeyCode("Period")));
 }
 
-public enum InteractionRecordingKind { Batch, Streaming }
+public enum InteractionRecordingKind { Batch, Streaming, PushToTalkStreaming }
 
 public sealed record InteractionStopOutcome(PlatformResult Result, bool RestoreClipboard = true)
 {
@@ -117,6 +118,10 @@ public sealed class LinuxInteractionCoordinator : IDisposable
     private bool _sessionCancelArmed;
     private long _sessionCancelGeneration;
     private bool _disposed;
+    private bool _pushToTalkStreamingOwned;
+    private bool _pushToTalkStreamingEnding;
+    private bool _pushToTalkStreamingCancelled;
+    private LinuxInteractionConfiguration? _pendingPushToTalkConfiguration;
 
     public LinuxInteractionCoordinator(
         IGlobalShortcutService shortcuts,
@@ -167,6 +172,12 @@ public sealed class LinuxInteractionCoordinator : IDisposable
         ArgumentNullException.ThrowIfNull(configuration);
         var validated = Validate(configuration);
         if (validated.IsFailure) return validated;
+
+        if (_pushToTalkStreamingOwned || _pushToTalkStreamingEnding)
+        {
+            _pendingPushToTalkConfiguration = configuration;
+            return PlatformResult.Success();
+        }
 
         var wasStarted = _started;
         var previousSessionCancelArmed = _sessionCancelArmed;
@@ -358,26 +369,77 @@ public sealed class LinuxInteractionCoordinator : IDisposable
 
     private void OnPushToTalkPressed(object? sender, EventArgs args)
     {
+        if (_pushToTalkStreamingOwned || _pushToTalkStreamingEnding) return;
         if (IsStreamingStartPending())
         {
             _pushToTalk.ResetToIdle();
             RaiseFailure(new PlatformError("interaction.batch_while_streaming_starting", "Push-to-talk cannot start while live transcription is connecting."));
         }
         else if (_started && !_heldActions.Contains(ToggleActionName) && !_recording.IsActive)
-            Dispatch(token => StartCoreAsync(InteractionRecordingKind.Batch, token));
+        {
+            if (_configuration.PushToTalkUsesStreaming && _configuration.StreamingEnabled)
+            {
+                _pushToTalkStreamingOwned = true;
+                _pushToTalkStreamingCancelled = false;
+                HandleStreamingShortcut();
+            }
+            else Dispatch(token => StartCoreAsync(InteractionRecordingKind.Batch, token));
+        }
         else if (_recording.IsActive) _pushToTalk.ResetToIdle();
     }
 
     private void OnPushToTalkReleased(object? sender, EventArgs args)
     {
+        if (EndPushToTalkStreaming(cancelled: false)) return;
         if (_started && !_heldActions.Contains(ToggleActionName) && _recording.IsActive && !_recording.IsStreaming)
             Dispatch(StopCoreAsync);
     }
 
     private void OnPushToTalkInterfered(object? sender, EventArgs args)
     {
+        if (EndPushToTalkStreaming(cancelled: true)) return;
         if (_started && !_heldActions.Contains(ToggleActionName) && _recording.IsActive && !_recording.IsStreaming)
             Dispatch(CancelCoreAsync);
+    }
+
+    private bool EndPushToTalkStreaming(bool cancelled)
+    {
+        if (!_pushToTalkStreamingOwned && !_pushToTalkStreamingEnding) return false;
+        _pushToTalkStreamingCancelled |= cancelled;
+        if (_pushToTalkStreamingEnding) return true;
+        _pushToTalkStreamingEnding = true;
+        // Cancel outside the operation queue: the connection attempt holds that queue.
+        lock (_streamingStartGate) _streamingStartCancellation?.Cancel();
+        Dispatch(async token =>
+        {
+            try
+            {
+                if (_recording.IsStreaming && _recording.IsActive)
+                {
+                    if (_pushToTalkStreamingCancelled) await CancelCoreAsync(token);
+                    else await StopCoreAsync(token);
+                }
+            }
+            finally
+            {
+                _pushToTalkStreamingEnding = false;
+                ResetPushToTalkStreaming();
+            }
+        });
+        return true;
+    }
+
+    private void ResetPushToTalkStreaming()
+    {
+        _pushToTalkStreamingOwned = false;
+        if (_disposed) return;
+        _pushToTalk.ResetToIdle();
+        if (!_pushToTalkStreamingEnding && _pendingPushToTalkConfiguration is { } pending)
+        {
+            _pendingPushToTalkConfiguration = null;
+            var result = ConfigureAndStart(pending);
+            if (result.IsFailure) RaiseFailure(result.Error!);
+        }
     }
 
     private void Dispatch(Func<CancellationToken, ValueTask> operation)
@@ -441,13 +503,14 @@ public sealed class LinuxInteractionCoordinator : IDisposable
         InteractionRecordingKind kind,
         CancellationToken cancellationToken)
     {
-        if (kind == InteractionRecordingKind.Streaming && !_configuration.StreamingEnabled)
+        if (kind != InteractionRecordingKind.Batch && !_configuration.StreamingEnabled)
         {
             RaiseFailure(new PlatformError(
                 "interaction.streaming_disabled",
                 "Enable live transcription before starting a streaming session."));
             return;
         }
+        cancellationToken.ThrowIfCancellationRequested();
         if (_recording.IsActive) return;
         _textInjection.CaptureTarget();
         _textInjection.StartSession();
@@ -478,6 +541,7 @@ public sealed class LinuxInteractionCoordinator : IDisposable
 
     private void HandleStreamingShortcut()
     {
+        if (_pushToTalkStreamingEnding) return;
         CancellationTokenSource? pending;
         lock (_streamingStartGate) pending = _streamingStartCancellation;
         if (pending is not null)
@@ -512,7 +576,9 @@ public sealed class LinuxInteractionCoordinator : IDisposable
 
     private async ValueTask StartStreamingFromShortcutAsync(CancellationTokenSource cancellation)
     {
-        try { await StartCoreAsync(InteractionRecordingKind.Streaming, cancellation.Token); }
+        var kind = _pushToTalkStreamingOwned
+            ? InteractionRecordingKind.PushToTalkStreaming : InteractionRecordingKind.Streaming;
+        try { await StartCoreAsync(kind, cancellation.Token); }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         finally
         {
@@ -520,6 +586,7 @@ public sealed class LinuxInteractionCoordinator : IDisposable
                 if (ReferenceEquals(_streamingStartCancellation, cancellation))
                     _streamingStartCancellation = null;
             cancellation.Dispose();
+            if (!_recording.IsActive) ResetPushToTalkStreaming();
         }
     }
 
@@ -541,7 +608,7 @@ public sealed class LinuxInteractionCoordinator : IDisposable
         finally
         {
             _textInjection.EndSession();
-            _pushToTalk.ResetToIdle();
+            ResetPushToTalkStreaming();
         }
         if (outcome.RestoreClipboard) _textInjection.ScheduleClipboardRestore(_configuration.ClipboardRestoreDelay);
         if (outcome.Result.IsFailure) RaiseFailure(outcome.Result.Error!);
@@ -573,7 +640,7 @@ public sealed class LinuxInteractionCoordinator : IDisposable
         DisarmDurationLimit();
         _textInjection.EndSession();
         _ = _textInjection.RestoreClipboardImmediatelyAsync(CancellationToken.None);
-        _pushToTalk.ResetToIdle();
+        ResetPushToTalkStreaming();
     }
 
     private ValueTask ChangeModeCoreAsync(CancellationToken cancellationToken)

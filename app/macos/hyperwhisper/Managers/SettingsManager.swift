@@ -157,6 +157,9 @@ class SettingsManager: ObservableObject {
     /// Push to Talk Double Press - determines if double pressing the PTT key toggles recording
     @AppStorage("pushToTalkDoublePressEnabled") var pushToTalkDoublePressEnabled: Bool = true
 
+    /// Use the streaming provider for push-to-talk when streaming is enabled.
+    @AppStorage("pushToTalkUsesStreaming") var pushToTalkUsesStreaming: Bool = false
+
     /// Quick Capture feature toggle - when on, the quickCapture shortcut starts a
     /// recording whose transcription is sent to Apple Notes (instead of pasted into
     /// the focused app).
@@ -644,6 +647,7 @@ extension UserDefaults {
             "pushToTalkEnabled": false,
             "pushToTalkMode": "disabled",
             "pushToTalkDoublePressEnabled": true,
+            "pushToTalkUsesStreaming": false,
             "quickCaptureEnabled": false,
             "quickCaptureModeId": ""
         ]

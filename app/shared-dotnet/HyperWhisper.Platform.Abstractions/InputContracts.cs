@@ -45,7 +45,7 @@ public sealed record GlobalShortcut(
     public bool IsModifierOnly => Modifiers != ShortcutModifiers.None && Key.IsNone;
 }
 
-public sealed record NamedShortcut(string Name, GlobalShortcut Shortcut);
+public sealed record NamedShortcut(string Name, GlobalShortcut Shortcut, bool ReleaseAfterAllKeysUp = false);
 
 public sealed class ShortcutTriggeredEventArgs(
     string name,

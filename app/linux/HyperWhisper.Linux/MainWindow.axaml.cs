@@ -1043,6 +1043,7 @@ public partial class MainWindow : Window
         {
             SessionCancelShortcut = cancel.Value,
             StreamingEnabled = settings.StreamingEnabled,
+            PushToTalkUsesStreaming = settings.PushToTalkUsesStreaming,
             StreamingShortcut = streaming.Value,
         });
         if (result.IsFailure)

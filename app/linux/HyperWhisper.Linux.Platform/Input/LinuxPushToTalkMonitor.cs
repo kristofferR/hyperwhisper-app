@@ -74,7 +74,8 @@ public sealed class LinuxPushToTalkMonitor : IPushToTalkMonitor
         if (_configuration.Mode == PushToTalkMode.Disabled) return PlatformResult.Success();
         var shortcut = _configuration.Mode == PushToTalkMode.CustomShortcut ? _configuration.CustomShortcut : MapModifier(_configuration.Modifier);
         if (shortcut is null || shortcut.IsEmpty) return PlatformResult.Failure("push_to_talk.invalid", "The configured push-to-talk input is invalid.");
-        var registered = _shortcuts.RegisterShortcuts([new NamedShortcut(ActionName, shortcut)]);
+        var registered = _shortcuts.RegisterShortcuts([new NamedShortcut(ActionName, shortcut,
+            ReleaseAfterAllKeysUp: _configuration.Mode == PushToTalkMode.CustomShortcut)]);
         if (!registered.TryGetValue(ActionName, out var result) || result.IsFailure)
             return result ?? PlatformResult.Failure("push_to_talk.registration_failed", "Push-to-talk registration failed.");
         return _shortcuts.Start();

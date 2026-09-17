@@ -106,6 +106,7 @@ public partial class SettingsService
         public string? ChangeModeShortcut { get; set; }
         public string? StreamingShortcut { get; set; }
         public PushToTalkSettings? PushToTalk { get; set; }
+        public bool PushToTalkUsesStreaming { get; set; }
         public string? RecordingsFolder { get; set; }
         public bool? StoreAsM4A { get; set; }
         public bool? KeepAudioFiles { get; set; }

@@ -110,6 +110,10 @@ struct ShortcutsSettingsSection: View {
                 if settingsManager.pushToTalkMode != .disabled {
                     Divider()
 
+                    PushToTalkStreamingToggle()
+
+                    Divider()
+
                     // Mode selection row
                     HStack(spacing: 12) {
                         Image(systemName: "keyboard")
@@ -337,6 +341,20 @@ struct ShortcutsSettingsSection: View {
 
         AppLogger.ui.info("🔄 Keyboard shortcuts reset to defaults")
         NotificationCenter.default.post(name: .shortcutDidChange, object: nil)
+    }
+}
+
+struct PushToTalkStreamingToggle: View {
+    @EnvironmentObject var settingsManager: SettingsManager
+
+    var body: some View {
+        SettingsToggleRow(
+            title: "settings.shortcuts.pushToTalk.streaming.title",
+            subtitle: "settings.shortcuts.pushToTalk.streaming.subtitle",
+            isOn: $settingsManager.pushToTalkUsesStreaming,
+            standalone: false
+        )
+        .disabled(!settingsManager.streamingEnabled || settingsManager.pushToTalkMode == .disabled)
     }
 }
 

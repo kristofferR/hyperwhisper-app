@@ -124,8 +124,15 @@ category-keyed extension above) and round-trip losslessly through the universal 
 |---|---|---|
 | `pushToTalkMode` | `SettingsManager.pushToTalkMode` (raw value) | — |
 | `pushToTalkDoublePressEnabled` | `SettingsManager.pushToTalkDoublePressEnabled` | — |
+| `pushToTalkUsesStreaming` | `SettingsManager.pushToTalkUsesStreaming` | — |
 | `quickCaptureEnabled` | `SettingsManager.quickCaptureEnabled` | — |
 | `quickCaptureModeId` | `SettingsManager.quickCaptureModeId` (UUID string, `""` = current mode) | — |
+
+Push-to-talk trigger preferences are stored per platform. The `pushToTalkUsesStreaming` boolean
+(default `false`) accompanies those preferences on all three platforms: macOS stores it in
+`platformExtensions.macos.settings.shortcuts`, Windows and Linux in their respective
+`platformExtensions.<platform>.settings` objects. A legacy backup that omits it leaves the local
+preference unchanged.
 
 Windows-only settings (go into `platformExtensions.windows.settings`; not yet
 shared at the top level). `autoIncreaseMicVolume` is also round-tripped by macOS

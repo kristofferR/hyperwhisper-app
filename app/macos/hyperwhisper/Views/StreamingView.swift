@@ -275,6 +275,8 @@ struct StreamingView: View {
                     if settingsManager.streamingEnabled {
                         Divider()
                         shortcutSection
+                        Divider()
+                        PushToTalkStreamingToggle()
                     }
                 }
 

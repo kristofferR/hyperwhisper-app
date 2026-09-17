@@ -112,6 +112,7 @@ public partial class MainViewModel : ViewModelBase
             audioRestoreClaim = AudioEnvironmentService.Instance.ClaimRestoreOwnershipForRecording();
             _audioEnvironmentState = audioRestoreClaim.InheritedRestoreState;
             var started = await _streamingClient.StartAsync(_streamingStartCts.Token);
+            _streamingStartCts.Token.ThrowIfCancellationRequested();
             // StartAsync's own internal race-closing check (see StreamingTranscriptionClient) can
             // still lose to a terminal close/error landing on the receive-loop thread in the
             // instant right after it decided to return true - re-check State here too so a
@@ -416,7 +417,8 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        if (!IsActiveStreamingGeneration(generation))
+        // Ctrl+V must wait until the held PTT modifier is released.
+        if (_pushToTalkStreamingOwned || !IsActiveStreamingGeneration(generation))
             return;
 
         if (!SettingsService.Instance.AutoPasteEnabled)
@@ -683,6 +685,7 @@ public partial class MainViewModel : ViewModelBase
             await _streamingClient.DisposeAsync();
             _streamingClient = null;
         }
+        ResetPushToTalkStreaming();
     }
 
     private string GetStreamingProviderDisplayName()

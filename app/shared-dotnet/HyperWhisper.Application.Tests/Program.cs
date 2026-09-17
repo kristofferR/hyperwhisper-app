@@ -168,6 +168,7 @@ try
     settings.Set("pushToTalkShortcutModifiers", "None");
     settings.Set("pushToTalkShortcutKey", "");
     settings.Set("pushToTalkDoublePressLock", true);
+    settings.Set("pushToTalkUsesStreaming", true);
     settings.Set("autoIncreaseMicVolume", true);
     settings.Set("keepMicrophoneWarm", true);
     settings.Set("audioEnvironmentPolicy", "duck");
@@ -205,6 +206,7 @@ try
         && reloadedSettings.Get<string>("cancelShortcutKey") is null,
         "conflicting shortcuts were persisted before validation");
     outputSettings.ResetShortcuts();
+    Assert(!outputSettings.PushToTalkUsesStreaming, "shortcut reset retained streaming opt-in");
     Assert(outputSettings.ToggleShortcutModifiers == "Control, Alt"
         && outputSettings.ToggleShortcutKey == string.Empty
         && outputSettings.CancelShortcutKey == "Escape"
@@ -222,6 +224,7 @@ try
     outputSettings.PushToTalkMode = "Modifier";
     outputSettings.PushToTalkModifier = "LeftAlt";
     outputSettings.PushToTalkDoublePressLock = true;
+    outputSettings.PushToTalkUsesStreaming = true;
     outputSettings.PasteResultText = true;
     outputSettings.RemoveFillerWords = false;
     outputSettings.AutocapitalizeInsert = true;
@@ -240,6 +243,7 @@ try
     var restartedOutputSettings = new SettingsViewModel(
         new PortableSettingsService(files, Path.Combine(root, "settings.json")));
     restartedOutputSettings.Load();
+    Assert(restartedOutputSettings.PushToTalkUsesStreaming, "push-to-talk streaming preference did not survive restart");
     Assert(restartedOutputSettings.StreamingProvider == "soniox",
         "Soniox streaming selection did not survive save and reload");
     Assert(restartedOutputSettings.StoreWordTimestamps,
@@ -332,6 +336,7 @@ try
         && !reloadedSettings.Get<bool>("allowLocalWhisperCpuFallback")
         && reloadedSettings.Get<string>("pushToTalkMode") == "Modifier"
         && reloadedSettings.Get<bool>("pushToTalkDoublePressLock")
+        && reloadedSettings.Get<bool>("pushToTalkUsesStreaming")
         && reloadedSettings.Get<bool>("autoIncreaseMicVolume")
         && reloadedSettings.Get<bool>("keepMicrophoneWarm")
         && reloadedSettings.Get<string>("audioEnvironmentPolicy") == "duck"

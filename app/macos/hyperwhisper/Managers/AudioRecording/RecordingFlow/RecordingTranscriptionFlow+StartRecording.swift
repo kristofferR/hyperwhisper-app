@@ -49,7 +49,9 @@ extension RecordingTranscriptionFlow {
         let attemptId = UUID().uuidString
         currentRecordingAttemptId = attemptId
 
-        let resolvedTrigger: RecordingTriggerSource = (appState?.isStreamingShortcutTriggered == true) ? .streamingShortcut : currentRecordingTriggerSource
+        let resolvedTrigger: RecordingTriggerSource = currentRecordingTriggerSource == .pushToTalk
+            ? .pushToTalk
+            : (appState?.isStreamingShortcutTriggered == true) ? .streamingShortcut : currentRecordingTriggerSource
         currentRecordingTriggerSource = resolvedTrigger
         sessionStartedWithTextDeliverySuppressed = RecordingTextDeliveryPolicy.shouldSuppress(
             sessionStartedSuppressed: false,
@@ -195,6 +197,18 @@ extension RecordingTranscriptionFlow {
             }
             // Mirrors the batch path below, so both mark the same boundary.
             logPreflightCheckpoint(.microphonePermission)
+
+            guard !Task.isCancelled else {
+                if currentRecordingAttemptId == attemptId {
+                    appState?.showRecordingDialog = false
+                    appState?.isStreamingShortcutTriggered = false
+                    currentRecordingAttemptId = nil
+                    currentRecordingTriggerSource = .unknown
+                    sessionStartedWithTextDeliverySuppressed = false
+                }
+                finishStartTransaction(.internalError, outcome: .cancelledByNewerToggle)
+                return
+            }
 
             if !hasPermission {
                 await MainActor.run {

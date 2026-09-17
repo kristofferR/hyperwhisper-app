@@ -1196,6 +1196,27 @@ internal static class Program
             //     (storage.keepAudioFiles, advanced.maxRecordingDuration,
             //     textOutput.storeWordTimestamps) are asserted ABSENT, so phase 3 has a
             //     failing-to-passing record of the gap it closes.
+            Run("push-to-talk streaming preference survives backup and legacy import", () =>
+            {
+                var settings = SettingsService.Instance;
+                var original = settings.PushToTalkUsesStreaming;
+                try
+                {
+                    settings.PushToTalkUsesStreaming = true;
+                    var exported = UniversalBackupMapper.BuildPlatformExtensions(settings);
+                    settings.PushToTalkUsesStreaming = false;
+                    UniversalBackupMapper.ApplyWindowsPlatformSettings(exported, settings);
+                    Assert(settings.PushToTalkUsesStreaming, "backup lost push-to-talk streaming");
+                    var legacy = new Dictionary<string, JsonElement>
+                    {
+                        ["windows"] = JsonSerializer.SerializeToElement(new { settings = new { } })
+                    };
+                    UniversalBackupMapper.ApplyWindowsPlatformSettings(legacy, settings);
+                    Assert(settings.PushToTalkUsesStreaming, "legacy backup reset an absent preference");
+                }
+                finally { settings.PushToTalkUsesStreaming = original; }
+            });
+
             Run("backup windows-settings vectors — native capture", () =>
             {
                 var vectorsPath = Path.Combine(AppContext.BaseDirectory, "backup-vectors.json");

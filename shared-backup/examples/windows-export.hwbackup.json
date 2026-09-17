@@ -206,6 +206,7 @@
         "changeModeShortcut": "Ctrl+Shift+M",
         "streamingShortcut": "Ctrl+Shift+S",
         "streamingEnabled": true,
+        "pushToTalkUsesStreaming": false,
         "streamingProvider": "openAI",
         "streamingLanguage": "auto",
         "streamingDeepgramModel": "nova-3-general",

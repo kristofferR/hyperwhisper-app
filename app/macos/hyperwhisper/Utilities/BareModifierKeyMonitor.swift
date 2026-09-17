@@ -257,6 +257,12 @@ final class BareModifierKeyMonitor {
                 return Unmanaged.passUnretained(event)
             }
 
+            // Live transcription types while the modifier is still held. Its own
+            // synthetic key events must not cancel or release push-to-talk.
+            guard !BareModifierKeyMonitor.isAppGeneratedEvent(event) else {
+                return Unmanaged.passUnretained(event)
+            }
+
             // Dispatch to main actor for thread-safe state access
             // We don't block the callback - just schedule the work
             Task { @MainActor in
@@ -779,6 +785,10 @@ final class BareModifierKeyMonitor {
     private func cancelDoubleTapStartTimer() {
         doubleTapStartTimer?.invalidate()
         doubleTapStartTimer = nil
+    }
+
+    nonisolated static func isAppGeneratedEvent(_ event: CGEvent) -> Bool {
+        event.getIntegerValueField(.eventSourceUnixProcessID) == Int64(ProcessInfo.processInfo.processIdentifier)
     }
 
     // MARK: - Triggers

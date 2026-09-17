@@ -74,6 +74,18 @@ public partial class SettingsService
         }
     }
 
+    public bool PushToTalkUsesStreaming
+    {
+        get => _settings.PushToTalkUsesStreaming;
+        set
+        {
+            if (_settings.PushToTalkUsesStreaming == value) return;
+            _settings.PushToTalkUsesStreaming = value;
+            Save();
+            NotifySettingsChanged();
+        }
+    }
+
     public PushToTalkSettings PushToTalk
     {
         get => _settings.PushToTalk ?? new PushToTalkSettings();
@@ -196,6 +208,7 @@ public partial class SettingsService
         _settings.ChangeModeShortcut = DefaultChangeModeShortcut.ToPersistedString();
         _settings.StreamingShortcut = DefaultStreamingShortcut.ToPersistedString();
         _settings.PushToTalk = new PushToTalkSettings();
+        _settings.PushToTalkUsesStreaming = false;
         Save();
         NotifySettingsChanged();
     }

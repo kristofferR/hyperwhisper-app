@@ -492,6 +492,7 @@ public static class UniversalBackupMapper
             ChangeModeShortcut = settings.ChangeModeShortcut.ToPersistedString(),
             StreamingShortcut = settings.StreamingShortcut.ToPersistedString(),
             StreamingEnabled = settings.StreamingEnabled,
+            PushToTalkUsesStreaming = settings.PushToTalkUsesStreaming,
             StreamingProvider = settings.StreamingProvider,
             StreamingLanguage = settings.StreamingLanguage,
             StreamingDeepgramModel = settings.StreamingDeepgramModel,
@@ -812,6 +813,7 @@ public static class UniversalBackupMapper
                     settings.StreamingShortcut = KeyboardShortcut.FromPersistedString(winSettings.StreamingShortcut);
 
                 if (winSettings.StreamingEnabled.HasValue) settings.StreamingEnabled = winSettings.StreamingEnabled.Value;
+                if (winSettings.PushToTalkUsesStreaming.HasValue) settings.PushToTalkUsesStreaming = winSettings.PushToTalkUsesStreaming.Value;
                 if (!string.IsNullOrEmpty(winSettings.StreamingProvider)) settings.StreamingProvider = winSettings.StreamingProvider;
                 if (!string.IsNullOrEmpty(winSettings.StreamingLanguage)) settings.StreamingLanguage = winSettings.StreamingLanguage;
                 if (!string.IsNullOrEmpty(winSettings.StreamingDeepgramModel)) settings.StreamingDeepgramModel = winSettings.StreamingDeepgramModel;
