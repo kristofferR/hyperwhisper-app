@@ -36,7 +36,8 @@ internal sealed class LinuxLiveTranscriptSink(ILiveTranscriptSink? preview = nul
 
     public void OnTranscript(LiveTranscriptUpdate update)
     {
-        if (string.IsNullOrWhiteSpace(update.Text) || update.Text.Length > 512 * 1024) return;
+        if (update.Text is null || update.Text.Length > 512 * 1024
+            || (update.IsFinal && string.IsNullOrWhiteSpace(update.Text))) return;
         var safe = update with { Text = update.Text.Trim() };
         try { _preview?.OnTranscript(safe); } catch { }
         var handlers = TranscriptReceived;
