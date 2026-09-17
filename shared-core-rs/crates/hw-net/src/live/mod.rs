@@ -169,6 +169,7 @@ mod language;
 mod openai;
 mod policy;
 mod session;
+mod soniox;
 mod xai;
 
 #[cfg(test)]
@@ -188,7 +189,7 @@ pub use policy::{
 };
 pub use session::LiveSession;
 
-/// The six websocket transcription providers.
+/// The supported websocket transcription providers.
 ///
 /// Local engines (Parakeet, Nemotron) are deliberately absent: they are not
 /// websocket protocols and share none of this. The arm names match
@@ -209,16 +210,18 @@ pub enum LiveProvider {
     Grok,
     GeminiTranscribe,
     HyperWhisperCloud,
+    Soniox,
 }
 
 impl LiveProvider {
     /// Every arm, for exhaustive tests and for the FFI round-trip guard.
-    pub const ALL: [LiveProvider; 6] = [
+    pub const ALL: [LiveProvider; 7] = [
         LiveProvider::Deepgram,
         LiveProvider::ElevenLabs,
         LiveProvider::OpenAi,
         LiveProvider::Grok,
         LiveProvider::GeminiTranscribe,
         LiveProvider::HyperWhisperCloud,
+        LiveProvider::Soniox,
     ];
 }

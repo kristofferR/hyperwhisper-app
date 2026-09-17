@@ -228,6 +228,7 @@ try
     outputSettings.RestoreClipboardAfterPaste = true;
     outputSettings.ClipboardRestoreDelaySeconds = 4.5d;
     outputSettings.StoreWordTimestamps = true;
+    outputSettings.StreamingProvider = "soniox";
     outputSettings.Save();
     Assert(reloadedSettings.Get("textOutput.pasteResultText", false)
         && !reloadedSettings.Get("textOutput.removeFillerWords", true)
@@ -239,6 +240,8 @@ try
     var restartedOutputSettings = new SettingsViewModel(
         new PortableSettingsService(files, Path.Combine(root, "settings.json")));
     restartedOutputSettings.Load();
+    Assert(restartedOutputSettings.StreamingProvider == "soniox",
+        "Soniox streaming selection did not survive save and reload");
     Assert(restartedOutputSettings.StoreWordTimestamps,
         "word-timestamp preference did not survive a settings-service restart");
 

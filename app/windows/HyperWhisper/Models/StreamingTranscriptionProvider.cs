@@ -19,7 +19,8 @@ public enum StreamingTranscriptionProvider
     ElevenLabs,
     OpenAI,
     Xai,
-    GeminiTranscribe
+    GeminiTranscribe,
+    Soniox
 }
 
 public static class StreamingTranscriptionProviderExtensions
@@ -32,6 +33,7 @@ public static class StreamingTranscriptionProviderExtensions
         StreamingTranscriptionProvider.OpenAI => "openAI",
         StreamingTranscriptionProvider.Xai => "xai",
         StreamingTranscriptionProvider.GeminiTranscribe => "geminiTranscribe",
+        StreamingTranscriptionProvider.Soniox => "soniox",
         _ => "hyperwhisperCloud"
     };
 
@@ -43,6 +45,7 @@ public static class StreamingTranscriptionProviderExtensions
         StreamingTranscriptionProvider.OpenAI => "OpenAI",
         StreamingTranscriptionProvider.Xai => "SpaceXAI",
         StreamingTranscriptionProvider.GeminiTranscribe => "Gemini 3.5 Transcribe",
+        StreamingTranscriptionProvider.Soniox => "Soniox",
         _ => "HyperWhisper Cloud"
     };
 
@@ -54,11 +57,12 @@ public static class StreamingTranscriptionProviderExtensions
         StreamingTranscriptionProvider.OpenAI => true,
         StreamingTranscriptionProvider.Xai => true,
         StreamingTranscriptionProvider.GeminiTranscribe => true,
+        StreamingTranscriptionProvider.Soniox => true,
         _ => false
     };
 
     public static bool IsValidStorageValue(string? value) =>
-        value is "hyperwhisperCloud" or "deepgram" or "elevenLabs" or "openAI" or "xai" or "geminiTranscribe";
+        value is "hyperwhisperCloud" or "deepgram" or "elevenLabs" or "openAI" or "xai" or "geminiTranscribe" or "soniox";
 
     public static StreamingTranscriptionProvider FromStorageValue(string? value) => value switch
     {
@@ -67,6 +71,7 @@ public static class StreamingTranscriptionProviderExtensions
         "openAI" => StreamingTranscriptionProvider.OpenAI,
         "xai" => StreamingTranscriptionProvider.Xai,
         "geminiTranscribe" => StreamingTranscriptionProvider.GeminiTranscribe,
+        "soniox" => StreamingTranscriptionProvider.Soniox,
         _ => StreamingTranscriptionProvider.HyperWhisperCloud
     };
 }

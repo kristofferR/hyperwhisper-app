@@ -278,6 +278,18 @@ extension RecordingTranscriptionFlow {
                 streamingProvider: selectedStreamingProvider
             )
 
+        case .soniox:
+            let sonioxKey = KeychainManager.shared.getAPIKey(for: .soniox)
+            guard !sonioxKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                await cancelRecordingWithError("Soniox API key not configured")
+                return
+            }
+            apiKey = sonioxKey
+            service = StreamingTranscriptionClient(
+                strategy: RustLiveStreamingStrategy(provider: selectedStreamingProvider),
+                streamingProvider: selectedStreamingProvider
+            )
+
         case .gemini:
             // Gemini 3.5 Transcribe Live direct streaming - requires the user's
             // own Google Gemini API key.

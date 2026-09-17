@@ -12,6 +12,7 @@ public enum LiveTranscriptionProvider
     HyperWhisperCloud,
     ParakeetLocal,
     NemotronLocal,
+    Soniox,
 }
 
 /// <param name="CloudTier">

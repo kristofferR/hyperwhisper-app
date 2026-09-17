@@ -52,6 +52,7 @@ public sealed class LiveCloudTranscriptionService
             or LiveTranscriptionProvider.ElevenLabs
             or LiveTranscriptionProvider.Grok
             or LiveTranscriptionProvider.GeminiTranscribe
+            or LiveTranscriptionProvider.Soniox
             or LiveTranscriptionProvider.HyperWhisperCloud => SharedCoreBridge.LiveRequiredSampleRate(provider),
         _ => throw new ArgumentOutOfRangeException(nameof(provider)),
     };
@@ -574,7 +575,8 @@ public sealed class LiveCloudTranscriptionService
 
     private void PublishTranscript(string? text, bool isFinal)
     {
-        if (string.IsNullOrWhiteSpace(text))
+        // An empty interim replaces (and clears) the previous hypothesis.
+        if (text is null || (isFinal && string.IsNullOrWhiteSpace(text)))
         {
             return;
         }

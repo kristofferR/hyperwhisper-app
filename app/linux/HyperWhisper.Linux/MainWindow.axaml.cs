@@ -3190,6 +3190,7 @@ public partial class MainWindow : Window
         return provider.ToLowerInvariant() switch
         {
             "hyperwhisper" => L("settings.streaming.providerStatus.hyperwhisperCloud"),
+            "soniox" => LF(configured ? "provider.status.configured" : "providerApiKey.subtitle", "Soniox"),
             "deepgram" => L(configured ? "settings.streaming.providerStatus.deepgram.configured" : "settings.streaming.providerStatus.deepgram.missingKey"),
             "elevenlabs" => L(configured ? "settings.streaming.providerStatus.elevenLabs.configured" : "settings.streaming.providerStatus.elevenLabs.missingKey"),
             "openai" => L(configured ? "settings.streaming.providerStatus.openAI.configured" : "settings.streaming.providerStatus.openAI.missingKey"),

@@ -317,7 +317,7 @@ public sealed class SettingsViewModel : ViewModelBase
     // and Windows. NormalizeStreamingProvider accepts both spellings, and
     // LiveStreamingModeRouter.TryProvider accepts both too — keep it that way.
     public IReadOnlyList<string> StreamingProviders { get; } =
-        ["deepgram", "elevenlabs", "openai", "grok", "geminiTranscribe", "hyperwhisper", "parakeetLocal", "nemotronLocal"];
+        ["deepgram", "elevenlabs", "openai", "grok", "soniox", "geminiTranscribe", "hyperwhisper", "parakeetLocal", "nemotronLocal"];
 
     /// <summary>
     /// Which vendor HyperWhisper Cloud's live route uses. Catalog-derived, so a
@@ -586,6 +586,7 @@ public sealed class SettingsViewModel : ViewModelBase
     // Both must learn a new provider; updating one is a silent-drift bug.
     private static string NormalizeStreamingProvider(string? value) => value?.Trim().ToLowerInvariant() switch
     {
+        "soniox" => "soniox",
         "elevenlabs" => "elevenlabs", "openai" => "openai", "grok" or "xai" => "grok",
         "geminitranscribe" or "gemini-transcribe" or "gemini_transcribe" => "geminiTranscribe",
         "hyperwhisper" or "hyperwhispercloud" => "hyperwhisper",

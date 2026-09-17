@@ -309,6 +309,9 @@ static Task TestStreamingCoverageAsync()
         True(rows.Any(x => x.ProviderId.Equals(provider, StringComparison.OrdinalIgnoreCase)));
     True(rows.All(x => !x.ProviderId.Equals("meta", StringComparison.OrdinalIgnoreCase)));
     True(rows.All(x => x.SupportsStreaming && x.Workload == ModelWorkload.Voice));
+    var soniox = rows.Single(x => x.ProviderId == "soniox");
+    Equal("stt-rt-v5", soniox.ModelId);
+    Equal("SonioxApiKey", soniox.CredentialAccount);
     return Task.CompletedTask;
 }
 

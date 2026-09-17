@@ -443,6 +443,7 @@ internal sealed class LiveProtocolStreamingStrategy : IStreamingProviderStrategy
         StreamingTranscriptionProvider.OpenAI => LiveTranscriptionProvider.OpenAi,
         StreamingTranscriptionProvider.Xai => LiveTranscriptionProvider.Grok,
         StreamingTranscriptionProvider.GeminiTranscribe => LiveTranscriptionProvider.GeminiTranscribe,
+        StreamingTranscriptionProvider.Soniox => LiveTranscriptionProvider.Soniox,
         _ => LiveTranscriptionProvider.HyperWhisperCloud
     };
 }

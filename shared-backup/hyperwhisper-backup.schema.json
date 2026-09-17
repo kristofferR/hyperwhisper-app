@@ -96,7 +96,7 @@
             "enabled": { "type": "boolean" },
             "provider": {
               "type": ["string", "null"],
-              "description": "Streaming transcription provider, for example 'hyperwhisperCloud', 'deepgram', 'elevenLabs', 'openAI', 'xai', or 'geminiTranscribe' (Google Gemini 3.5 Transcribe Live, BYOK). Free string, deliberately not an enum: a value a reader does not recognise falls back to 'hyperwhisperCloud' rather than failing the restore, and platforms add BYOK vendors at different times. Some platforms also carry local engines here (macOS: 'parakeetLocal', 'nemotronLocal')."
+              "description": "Streaming transcription provider, for example 'hyperwhisperCloud', 'deepgram', 'elevenLabs', 'openAI', 'xai', 'soniox' (Soniox real-time, BYOK), or 'geminiTranscribe' (Google Gemini 3.5 Transcribe Live, BYOK). Free string, deliberately not an enum: a value a reader does not recognise falls back to 'hyperwhisperCloud' rather than failing the restore, and platforms add BYOK vendors at different times. Some platforms also carry local engines here (macOS: 'parakeetLocal', 'nemotronLocal')."
             },
             "language": {
               "type": ["string", "null"],

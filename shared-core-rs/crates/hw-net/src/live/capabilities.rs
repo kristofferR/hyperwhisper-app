@@ -23,6 +23,7 @@ pub fn required_sample_rate(provider: LiveProvider) -> u32 {
         | LiveProvider::ElevenLabs
         | LiveProvider::Grok
         | LiveProvider::GeminiTranscribe
+        | LiveProvider::Soniox
         | LiveProvider::HyperWhisperCloud => 16_000,
     }
 }
@@ -40,6 +41,7 @@ pub fn supports_vocabulary(provider: LiveProvider) -> bool {
         LiveProvider::Deepgram
         | LiveProvider::Grok
         | LiveProvider::GeminiTranscribe
+        | LiveProvider::Soniox
         | LiveProvider::HyperWhisperCloud => true,
         LiveProvider::ElevenLabs | LiveProvider::OpenAi => false,
     }
@@ -73,7 +75,7 @@ pub fn supports_vocabulary_without_language(
         LiveProvider::HyperWhisperCloud => {
             super::hw_cloud::stt_provider_for_tier(cloud_tier) != super::hw_cloud::DEEPGRAM_STT
         }
-        LiveProvider::Grok | LiveProvider::GeminiTranscribe => true,
+        LiveProvider::Grok | LiveProvider::GeminiTranscribe | LiveProvider::Soniox => true,
         LiveProvider::ElevenLabs | LiveProvider::OpenAi => false,
     }
 }
@@ -102,6 +104,7 @@ pub fn complete_ends_session_before_stop(provider: LiveProvider) -> bool {
         LiveProvider::Deepgram
         | LiveProvider::ElevenLabs
         | LiveProvider::OpenAi
+        | LiveProvider::Soniox
         | LiveProvider::Grok
         | LiveProvider::HyperWhisperCloud => true,
     }
@@ -130,6 +133,7 @@ pub fn start_timeout_ms(provider: LiveProvider) -> u32 {
         LiveProvider::Deepgram
         | LiveProvider::ElevenLabs
         | LiveProvider::OpenAi
+        | LiveProvider::Soniox
         | LiveProvider::Grok
         | LiveProvider::HyperWhisperCloud => 0,
     }
@@ -143,6 +147,7 @@ pub fn start_timeout_ms(provider: LiveProvider) -> u32 {
 /// already saved and splits the vendor in two going forward.
 pub fn provider_label(provider: LiveProvider) -> &'static str {
     match provider {
+        LiveProvider::Soniox => "Soniox (Streaming)",
         LiveProvider::Deepgram => "Deepgram (Streaming)",
         LiveProvider::ElevenLabs => "ElevenLabs (Streaming)",
         LiveProvider::OpenAi => "OpenAI (Streaming)",

@@ -16,7 +16,7 @@ use hw_net::live as lv;
 // Types
 // ===========================================================================
 
-/// The six websocket transcription providers. Mirrors `lv::LiveProvider`.
+/// The supported websocket transcription providers. Mirrors `lv::LiveProvider`.
 ///
 /// Local engines (Parakeet, Nemotron) are deliberately absent — they are not
 /// websocket protocols. Windows spells this vendor set with `Xai` where this
@@ -33,11 +33,13 @@ pub enum HwLiveProvider {
     Grok,
     GeminiTranscribe,
     HyperWhisperCloud,
+    Soniox,
 }
 
 impl From<HwLiveProvider> for lv::LiveProvider {
     fn from(p: HwLiveProvider) -> Self {
         match p {
+            HwLiveProvider::Soniox => lv::LiveProvider::Soniox,
             HwLiveProvider::Deepgram => lv::LiveProvider::Deepgram,
             HwLiveProvider::ElevenLabs => lv::LiveProvider::ElevenLabs,
             HwLiveProvider::OpenAi => lv::LiveProvider::OpenAi,
@@ -51,6 +53,7 @@ impl From<HwLiveProvider> for lv::LiveProvider {
 impl From<lv::LiveProvider> for HwLiveProvider {
     fn from(p: lv::LiveProvider) -> Self {
         match p {
+            lv::LiveProvider::Soniox => HwLiveProvider::Soniox,
             lv::LiveProvider::Deepgram => HwLiveProvider::Deepgram,
             lv::LiveProvider::ElevenLabs => HwLiveProvider::ElevenLabs,
             lv::LiveProvider::OpenAi => HwLiveProvider::OpenAi,
@@ -698,10 +701,11 @@ impl HwLiveSession {
 mod tests {
     use super::*;
 
-    const ALL: [lv::LiveProvider; 6] = lv::LiveProvider::ALL;
+    const ALL: [lv::LiveProvider; 7] = lv::LiveProvider::ALL;
 
     fn hw_tag(p: &HwLiveProvider) -> &'static str {
         match p {
+            HwLiveProvider::Soniox => "soniox",
             HwLiveProvider::Deepgram => "deepgram",
             HwLiveProvider::ElevenLabs => "elevenlabs",
             HwLiveProvider::OpenAi => "openai",
@@ -713,6 +717,7 @@ mod tests {
 
     fn live_tag(p: &lv::LiveProvider) -> &'static str {
         match p {
+            lv::LiveProvider::Soniox => "soniox",
             lv::LiveProvider::Deepgram => "deepgram",
             lv::LiveProvider::ElevenLabs => "elevenlabs",
             lv::LiveProvider::OpenAi => "openai",

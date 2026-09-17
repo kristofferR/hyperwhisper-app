@@ -53,6 +53,7 @@ static async Task ModeRouterProviders()
         ["ElevenLabsApiKey"] = "el",
         ["OpenAIApiKey"] = "oa",
         ["GrokApiKey"] = "xai",
+        ["SonioxApiKey"] = "sx",
         ["GeminiTranscribeApiKey"] = "AIza",
         ["LicenseKey"] = "license",
     });
@@ -63,6 +64,7 @@ static async Task ModeRouterProviders()
         ("elevenLabs", LiveTranscriptionProvider.ElevenLabs, "ElevenLabsApiKey", false),
         ("openAI", LiveTranscriptionProvider.OpenAi, "OpenAIApiKey", false),
         ("xai", LiveTranscriptionProvider.Grok, "GrokApiKey", false),
+        ("soniox", LiveTranscriptionProvider.Soniox, "SonioxApiKey", false),
         // Both spellings must resolve: SettingsViewModel persists "geminiTranscribe",
         // but the wire/settings history also carries the hyphenated catalog id.
         ("geminiTranscribe", LiveTranscriptionProvider.GeminiTranscribe, "GeminiTranscribeApiKey", false),
@@ -199,6 +201,8 @@ static Task EphemeralPreviewLifecycle()
     Equal("one two", preview.Snapshot.DisplayText);
     preview.OnTranscript(new("one two three", false));
     Equal("one two three", preview.Snapshot.DisplayText);
+    preview.OnTranscript(new("", false));
+    Equal("", preview.Snapshot.DisplayText);
     preview.OnTranscript(new("one two", true));
     Equal("one two", preview.Snapshot.CommittedText);
     preview.OnTranscript(new("two three", true));

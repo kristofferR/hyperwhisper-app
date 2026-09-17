@@ -246,6 +246,9 @@ public partial class StreamingSettingsPage : Page
         ProviderStatusText.Text = provider switch
         {
             StreamingTranscriptionProvider.HyperWhisperCloud => Loc.S("settings.streaming.providerStatus.hyperwhisperCloud"),
+            StreamingTranscriptionProvider.Soniox => ApiKeyService.Instance.HasApiKey(TranscriptionApiKeyType.Soniox)
+                ? Loc.S("provider.status.configured", "Soniox")
+                : Loc.S("providerApiKey.subtitle", "Soniox"),
             StreamingTranscriptionProvider.Deepgram => ApiKeyService.Instance.HasApiKey(TranscriptionApiKeyType.Deepgram)
                 ? Loc.S("settings.streaming.providerStatus.deepgram.configured")
                 : Loc.S("settings.streaming.providerStatus.deepgram.missingKey"),

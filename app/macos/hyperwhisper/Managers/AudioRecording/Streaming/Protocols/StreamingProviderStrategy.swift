@@ -342,6 +342,7 @@ enum StreamingTranscriptionProvider: String, CaseIterable, Identifiable {
     case elevenLabs = "elevenLabs"
     case openAI = "openAI"
     case xai = "xai"
+    case soniox = "soniox"
     /// Google's Gemini 3.5 Transcribe Live socket.
     ///
     /// The raw value is `geminiTranscribe`, NOT `gemini`: the streaming provider
@@ -389,6 +390,7 @@ enum StreamingTranscriptionProvider: String, CaseIterable, Identifiable {
         case .elevenLabs: return "ElevenLabs"
         case .openAI: return "OpenAI"
         case .xai: return "SpaceXAI"
+        case .soniox: return "Soniox"
         case .gemini: return "Gemini 3.5 Transcribe"
         case .parakeetLocal: return "Parakeet (On-Device)"
         case .nemotronLocal: return "Nemotron 3.5 (On-Device)"
@@ -403,7 +405,7 @@ enum StreamingTranscriptionProvider: String, CaseIterable, Identifiable {
     var requiresAPIKey: Bool {
         switch self {
         case .hyperwhisperCloud, .parakeetLocal, .nemotronLocal: return false
-        case .deepgram, .elevenLabs, .openAI, .xai, .gemini: return true
+        case .deepgram, .elevenLabs, .openAI, .xai, .gemini, .soniox: return true
         }
     }
 
@@ -411,7 +413,7 @@ enum StreamingTranscriptionProvider: String, CaseIterable, Identifiable {
     var isLocal: Bool {
         switch self {
         case .parakeetLocal, .nemotronLocal: return true
-        case .hyperwhisperCloud, .deepgram, .elevenLabs, .openAI, .xai, .gemini: return false
+        case .hyperwhisperCloud, .deepgram, .elevenLabs, .openAI, .xai, .gemini, .soniox: return false
         }
     }
 
@@ -426,6 +428,7 @@ enum StreamingTranscriptionProvider: String, CaseIterable, Identifiable {
         case .elevenLabs: return .elevenLabs
         case .openAI: return .openai
         case .xai: return .grok
+        case .soniox: return .soniox
         case .gemini: return .geminiTranscribe
         case .parakeetLocal, .nemotronLocal: return nil
         }
@@ -441,6 +444,7 @@ enum StreamingTranscriptionProvider: String, CaseIterable, Identifiable {
         case .elevenLabs: return .elevenLabs
         case .openAI: return .openAI
         case .xai: return .grok
+        case .soniox: return .soniox
         case .gemini: return .geminiTranscribe
         }
     }

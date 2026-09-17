@@ -937,6 +937,7 @@
                   <ComboBoxItem Tag="elevenlabs" Content="{ReflectionBinding [settings.streaming.provider.elevenLabs], Source={StaticResource Localization}}"/>
                   <ComboBoxItem Tag="openai" Content="{ReflectionBinding [settings.streaming.provider.openAI], Source={StaticResource Localization}}"/>
                   <ComboBoxItem Tag="grok" Content="{ReflectionBinding [settings.streaming.provider.xai], Source={StaticResource Localization}}"/>
+                  <ComboBoxItem Tag="soniox" Content="{ReflectionBinding [provider.soniox], Source={StaticResource Localization}}"/>
                   <ComboBoxItem Tag="geminiTranscribe" Content="{ReflectionBinding [settings.streaming.provider.geminiTranscribe], Source={StaticResource Localization}}"/>
                 </ComboBox>
               </Grid>

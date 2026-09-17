@@ -46,7 +46,7 @@ public sealed class EphemeralLiveTranscriptPreview : ILiveTranscriptSink
     {
         ArgumentNullException.ThrowIfNull(update);
         var value = Normalize(update.Text);
-        if (value.Length == 0) return;
+        if (update.IsFinal && value.Length == 0) return;
         lock (_gate)
         {
             if (!_active) return;
